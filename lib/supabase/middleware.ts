@@ -5,12 +5,24 @@ import type { Database } from './database.types'
 // Routes that must remain reachable without a session.
 // Everything else is gated here and re-checked in each route handler: the
 // proxy is an optimistic check, not the authorization boundary.
-const PUBLIC_ROUTES = ['/sign-in', '/api/webhooks/paypal', '/api/health']
+const PUBLIC_ROUTES = [
+  '/sign-in',
+  '/register',
+  '/auth/callback',
+  '/api/webhooks/paypal',
+  '/api/health',
+]
+
+const AUTH_ROUTES = ['/sign-in', '/register']
 
 function isPublicRoute(pathname: string) {
   return PUBLIC_ROUTES.some(
     (route) => pathname === route || pathname.startsWith(`${route}/`)
   )
+}
+
+function isAuthRoute(pathname: string) {
+  return AUTH_ROUTES.includes(pathname)
 }
 
 // Copies the session cookies (and their cache headers) from the response the
@@ -86,6 +98,18 @@ export async function updateSession(request: NextRequest) {
       `${request.nextUrl.pathname}${request.nextUrl.search}`
     )
     return copySession(NextResponse.redirect(url), supabaseResponse)
+  }
+
+  // Redirect authenticated users away from auth pages
+  if (user && isAuthRoute(request.nextUrl.pathname)) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/workspace'
+    url.search = ''
+
+    return copySession(
+      NextResponse.redirect(url),
+      supabaseResponse
+    )
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is. If you
