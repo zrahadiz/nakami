@@ -6,6 +6,7 @@ import type { Database } from './database.types'
 // Everything else is gated here and re-checked in each route handler: the
 // proxy is an optimistic check, not the authorization boundary.
 const PUBLIC_ROUTES = [
+  '/',
   '/sign-in',
   '/register',
   '/auth/callback',

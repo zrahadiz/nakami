@@ -1,4 +1,3 @@
-import type { Metadata } from "next";
 import { display, sans, mono } from "@/lib/fonts"; // or "@/lib/fonts"
 import "./globals.css";
 
