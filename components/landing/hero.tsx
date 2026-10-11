@@ -219,7 +219,6 @@ function PromptBox({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
-  const [budget, setBudget] = useState("");
   const [phIndex, setPhIndex] = useState(0);
 
   useEffect(() => {
@@ -262,10 +261,9 @@ function PromptBox({
     }
     const params = new URLSearchParams({ category });
     if (prompt.trim()) params.set("prompt", prompt.trim());
-    if (budget) params.set("budget", budget);
     // TODO: an image can't travel in a query string. Upload it (e.g. to Supabase Storage)
     // and pass its URL/path here once the user is signed in.
-    router.push(`/register?${params.toString()}`);
+    // router.push(`/register?${params.toString()}`);
   }
 
   function onKeyDown(e: KeyboardEvent<HTMLTextAreaElement>) {
