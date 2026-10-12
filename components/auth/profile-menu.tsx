@@ -99,7 +99,7 @@ export function ProfileMenu({ user }: ProfileMenuProps) {
           {/* Profile links */}
           <div className="py-1">
             <Link
-              href="/workspace"
+              href="/home"
               role="menuitem"
               onClick={() => setIsOpen(false)}
               className="block rounded-xl px-3 py-2.5 text-sm text-[#1E1B18] transition hover:bg-[#EAE3D7]"

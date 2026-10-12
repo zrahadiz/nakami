@@ -93,7 +93,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         if (error) throw error;
 
         if (data.session) {
-          router.replace("/workspace");
+          router.replace("/home");
           router.refresh();
         } else {
           setMessage(
@@ -108,7 +108,7 @@ export function AuthForm({ mode }: AuthFormProps) {
 
         if (error) throw error;
 
-        router.replace("/workspace");
+        router.replace("/home");
         router.refresh();
       }
     } catch (err) {

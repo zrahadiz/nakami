@@ -104,7 +104,7 @@ export async function updateSession(request: NextRequest) {
   // Redirect authenticated users away from auth pages
   if (user && isAuthRoute(request.nextUrl.pathname)) {
     const url = request.nextUrl.clone()
-    url.pathname = '/workspace'
+    url.pathname = '/home'
     url.search = ''
 
     return copySession(
