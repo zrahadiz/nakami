@@ -9,8 +9,10 @@
 // The job shape is read tolerantly (camelCase or snake_case), so it works with
 // whatever `jobFromRow` returns.
 
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+
+import { createClient } from '@/lib/supabase/client'
 
 export type Job = {
   id: string
@@ -56,7 +58,7 @@ const inProgress = (job: Job) => job.status === 'queued' || job.status === 'runn
 
 export function useJobs(threadId: string) {
   const queryClient = useQueryClient()
-  const queryKey = ['jobs', threadId] as const
+  const queryKey = useMemo(() => ['jobs', threadId] as const, [threadId])
 
   const query = useQuery({
     queryKey,
@@ -72,6 +74,33 @@ export function useJobs(threadId: string) {
     // Keep polling only while something is still generating.
     refetchInterval: (q) => (q.state.data?.some(inProgress) ? 3000 : false),
   })
+
+  // Realtime: the worker flips job status server-side, and postgres_changes
+  // pushes each row the moment it lands (supabase_realtime publication on
+  // `jobs`, see the T2 migration). Invalidating the query refetches the full
+  // list; the refetchInterval above stays as a belt-and-braces fallback.
+  useEffect(() => {
+    const client = createClient()
+    const channel = client
+      .channel(`jobs:${threadId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'jobs',
+          filter: `thread_id=eq.${threadId}`,
+        },
+        () => {
+          void queryClient.invalidateQueries({ queryKey })
+        }
+      )
+      .subscribe()
+
+    return () => {
+      void client.removeChannel(channel)
+    }
+  }, [threadId, queryClient, queryKey])
 
   /** Latest job per product id. */
   const byProduct = useMemo(() => {

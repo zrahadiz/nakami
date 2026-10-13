@@ -11,6 +11,7 @@ export function threadFromRow(row: ThreadRow): Thread {
     userId: row.user_id,
     name: row.name,
     firstPrompt: row.first_prompt,
+    previewImageUrl: row.preview_image_url ?? null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }

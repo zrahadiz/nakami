@@ -73,7 +73,7 @@ export function Features() {
         <div className="mt-12 grid gap-4 md:grid-cols-3">
           {/* Swap & lock */}
           <div className="rounded-3xl border border-[#E8E1D5] bg-[#F6F2EA] p-7 md:col-span-2">
-            <h3 className="text-lg font-semibold">Swap what you don't love, lock what you do</h3>
+            <h3 className="text-lg font-semibold">Swap what you don&apos;t love, lock what you do</h3>
             <p className="mt-2 max-w-md text-[15px] leading-relaxed text-[#1E1B18]/65">
               Every slot offers close alternatives. Lock a favorite and regenerate the rest around it.
             </p>

@@ -47,7 +47,13 @@ function lastUserText(messages: unknown): string | undefined {
 }
 
 export function createNakamiConnection(threadId: string) {
-  const nakamiFetch: typeof fetch = async (input, init) => {
+  // Bun's `typeof fetch` carries a `preconnect` property that a plain wrapper
+  // can't satisfy structurally, so the wrapper is typed by its call signature
+  // and asserted once at the end.
+  const nakamiFetch = (async (
+    input: Parameters<typeof fetch>[0],
+    init?: Parameters<typeof fetch>[1],
+  ) => {
     try {
       if (typeof init?.body === 'string') {
         const payload: unknown = JSON.parse(init.body)
@@ -77,7 +83,7 @@ export function createNakamiConnection(threadId: string) {
     }
 
     return fetch(input, init)
-  }
+  }) as typeof fetch
 
   return fetchServerSentEvents('/api/chat', { fetchClient: nakamiFetch })
 }

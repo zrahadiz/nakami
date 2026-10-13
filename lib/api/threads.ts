@@ -4,6 +4,8 @@ export interface Thread {
   id: string
   name: string
   firstPrompt?: string | null
+  /** Pinned 3D scene preview capture (threads.preview_image_url), if any. */
+  previewImageUrl?: string | null
   createdAt?: string
   updatedAt?: string
 }

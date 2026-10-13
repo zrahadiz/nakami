@@ -157,6 +157,7 @@ export type Database = {
           first_prompt: string | null
           id: string
           name: string
+          preview_image_url: string | null
           updated_at: string
           user_id: string
         }
@@ -165,6 +166,7 @@ export type Database = {
           first_prompt?: string | null
           id?: string
           name: string
+          preview_image_url?: string | null
           updated_at?: string
           user_id: string
         }
@@ -173,6 +175,7 @@ export type Database = {
           first_prompt?: string | null
           id?: string
           name?: string
+          preview_image_url?: string | null
           updated_at?: string
           user_id?: string
         }

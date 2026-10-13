@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import dynamic from 'next/dynamic'
 import {
   Box,
   Check,
@@ -15,24 +14,8 @@ import {
   TriangleAlert,
 } from 'lucide-react'
 
-import type { SceneItem } from '@/components/workspace/scene-3d'
 import type { Job } from '@/lib/workspace/use-jobs'
 import { money, total, type Board, type Product } from '@/types/workspaces'
-
-// three.js is heavy and browser-only: load it only when the 3D tab is opened.
-const Scene3D = dynamic(() => import('@/components/workspace/scene-3d'), {
-  ssr: false,
-  loading: () => (
-    <div className="grid h-full place-items-center text-sm text-white/70">
-      Loading 3D viewer…
-    </div>
-  ),
-})
-
-const backdrop: Record<Board['category'], string> = {
-  furniture: 'linear-gradient(#F1EBDF 0 62%, #D9CFBC 62% 100%)',
-  gaming: 'linear-gradient(#1A1530 0 62%, #0F0D18 62% 100%)',
-}
 
 /* ---------- small pieces ---------- */
 
@@ -297,150 +280,6 @@ function EmptyBoard() {
   )
 }
 
-/* ---------- 3D tab ---------- */
-
-function ThreeDView({
-  board,
-  scope,
-  jobs,
-  sceneItems,
-  generating,
-  onGenerate,
-  onGoToBoard,
-}: {
-  board: Board
-  scope: Product[]
-  jobs: Map<string, Job>
-  sceneItems: SceneItem[]
-  generating: boolean
-  onGenerate: (slots?: string[]) => void
-  onGoToBoard: () => void
-}) {
-  const withJobs = scope.filter((p) => jobs.has(p.id))
-  const pending = withJobs.filter((p) => {
-    const status = jobs.get(p.id)?.status
-    return status === 'queued' || status === 'running'
-  })
-
-  if (withJobs.length === 0) {
-    return (
-      <div className="mx-auto mt-12 max-w-sm rounded-3xl border-2 border-dashed border-input px-8 py-14 text-center">
-        <p className="font-[family-name:var(--font-display)] text-2xl font-medium">
-          No 3D scene yet
-        </p>
-        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-          Select products on the Board tab, then press &ldquo;Generate 3D scene&rdquo; to see
-          them placed together.
-        </p>
-        <button
-          type="button"
-          onClick={onGoToBoard}
-          className="mt-6 h-10 rounded-xl border border-border px-4 text-sm font-medium outline-none transition hover:bg-accent focus-visible:ring-2 focus-visible:ring-[#D9623B]/40"
-        >
-          Go to board
-        </button>
-      </div>
-    )
-  }
-
-  return (
-    <div className="space-y-5">
-      <div
-        className="relative h-[min(60vh,540px)] min-h-[320px] overflow-hidden rounded-3xl border border-border"
-        style={{ background: backdrop[board.category] }}
-      >
-        {sceneItems.length > 0 ? (
-          <Scene3D items={sceneItems} />
-        ) : (
-          <div className="grid h-full place-items-center px-6 text-center">
-            <div>
-              <Loader2
-                className={`mx-auto size-6 animate-spin ${
-                  board.category === 'gaming' ? 'text-white/70' : 'text-black/40'
-                }`}
-              />
-              <p
-                className={`mt-3 text-sm ${
-                  board.category === 'gaming' ? 'text-white/80' : 'text-black/60'
-                }`}
-              >
-                Generating 3D models… this can take a minute or two.
-              </p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {sceneItems.length > 0 && (
-        <p className="text-center text-xs text-muted-foreground">
-          Drag to rotate · scroll to zoom · models are not shown to real-world scale
-        </p>
-      )}
-
-      {pending.length > 0 && sceneItems.length > 0 && (
-        <p className="text-center text-xs text-muted-foreground">
-          {pending.length} more {pending.length === 1 ? 'model is' : 'models are'} still
-          generating. They&apos;ll appear automatically.
-        </p>
-      )}
-
-      <ul className="grid gap-2 sm:grid-cols-2">
-        {withJobs.map((p) => {
-          const job = jobs.get(p.id)!
-          return (
-            <li
-              key={p.slot}
-              className="flex items-center gap-3 rounded-2xl border border-border bg-card p-3"
-            >
-              {p.imageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={p.imageUrl}
-                  alt=""
-                  loading="lazy"
-                  className="size-10 shrink-0 rounded-lg bg-white object-contain"
-                />
-              ) : (
-                <span className="size-10 shrink-0 rounded-lg" style={{ background: p.color }} />
-              )}
-
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm font-medium">{p.name}</span>
-                <span
-                  className={`block truncate text-xs ${
-                    job.status === 'failed' ? 'text-destructive' : 'text-muted-foreground'
-                  }`}
-                >
-                  {job.status === 'ready'
-                    ? 'Ready'
-                    : job.status === 'failed'
-                      ? (job.error ?? 'Generation failed')
-                      : 'Generating…'}
-                </span>
-              </span>
-
-              {job.status === 'failed' && (
-                <button
-                  type="button"
-                  disabled={generating}
-                  onClick={() => onGenerate([p.slot])}
-                  className="h-8 shrink-0 rounded-lg border border-border px-3 text-xs font-medium outline-none transition hover:bg-accent focus-visible:ring-2 focus-visible:ring-[#D9623B]/40 disabled:opacity-50"
-                >
-                  Retry
-                </button>
-              )}
-              {(job.status === 'queued' || job.status === 'running') && (
-                <Loader2 className="size-4 shrink-0 animate-spin text-muted-foreground" />
-              )}
-              {job.status === 'ready' && <Check className="size-4 shrink-0 text-[#5C6B52]" />}
-            </li>
-          )
-        })}
-      </ul>
-    </div>
-  )
-}
-
 /* ---------- Panel ---------- */
 
 export function BoardPanel({
@@ -450,7 +289,8 @@ export function BoardPanel({
   jobs,
   generating,
   generateError,
-  sceneItems,
+  pinnedPreviewUrl,
+  onOpenPreview,
   onToggleSelect,
   onSelectAll,
   onClearSelection,
@@ -467,17 +307,17 @@ export function BoardPanel({
   jobs: Map<string, Job>
   generating: boolean
   generateError: string | null
-  /** Ready models to show in the 3D scene. */
-  sceneItems: SceneItem[]
+  /** Pinned 3D scene preview, shown in the corner (opened via onOpenPreview). */
+  pinnedPreviewUrl: string | null
+  onOpenPreview: () => void
   onToggleSelect: (slot: string) => void
   onSelectAll: () => void
   onClearSelection: () => void
-  onGenerate: (slots?: string[]) => Promise<void>
+  onGenerate: (slots: string[]) => Promise<void>
   onSwap: (slot: string, altId: string) => void
   onToggleLock: (slot: string) => void
   onRemove: (slot: string) => void
 }) {
-  const [view, setView] = useState<'board' | '3d'>('board')
   const [summaryOpen, setSummaryOpen] = useState(false)
 
   const { products, budget } = board
@@ -485,10 +325,6 @@ export function BoardPanel({
   const over = budget !== null && sum > budget
   const pct = budget ? Math.min(100, (sum / budget) * 100) : 100
   const allSelected = products.length > 0 && selected.size === products.length
-
-  const scope =
-    selected.size > 0 ? products.filter((p) => selected.has(p.slot)) : products
-  const readyCount = products.filter((p) => jobs.get(p.id)?.status === 'ready').length
 
   const byRetailer = new Map<string, { count: number; subtotal: number }>()
   for (const p of products) {
@@ -498,13 +334,12 @@ export function BoardPanel({
     byRetailer.set(p.retailer, entry)
   }
 
-  async function handleGenerate(slots?: string[]) {
-    setView('3d')
+  async function handleGenerate(slots: string[] = [...selected]) {
     await onGenerate(slots)
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-background">
+    <div className="relative flex min-h-0 flex-1 flex-col bg-background">
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
           {products.length === 0 && running && <BoardSkeleton />}
@@ -532,39 +367,10 @@ export function BoardPanel({
                       Updating…
                     </span>
                   )}
-
-                  <div
-                    role="tablist"
-                    aria-label="Board view"
-                    className="flex rounded-full bg-muted p-1"
-                  >
-                    {(
-                      [
-                        ['board', 'Board'],
-                        ['3d', readyCount ? `3D scene (${readyCount})` : '3D scene'],
-                      ] as const
-                    ).map(([value, label]) => (
-                      <button
-                        key={value}
-                        type="button"
-                        role="tab"
-                        aria-selected={view === value}
-                        onClick={() => setView(value)}
-                        className={`rounded-full px-3.5 py-1.5 text-sm outline-none transition focus-visible:ring-2 focus-visible:ring-[#D9623B]/40 ${
-                          view === value
-                            ? 'bg-background font-medium shadow-sm'
-                            : 'text-foreground/60 hover:text-foreground'
-                        }`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
                 </div>
               </div>
 
-              {view === 'board' ? (
-                <>
+              <>
                   {/* budget */}
                   <div className="rounded-2xl border border-border bg-card p-4">
                     <div className="flex items-baseline justify-between gap-3">
@@ -639,17 +445,6 @@ export function BoardPanel({
                     ))}
                   </ul>
                 </>
-              ) : (
-                <ThreeDView
-                  board={board}
-                  scope={scope}
-                  jobs={jobs}
-                  sceneItems={sceneItems}
-                  generating={generating}
-                  onGenerate={(slots) => void handleGenerate(slots)}
-                  onGoToBoard={() => setView('board')}
-                />
-              )}
             </>
           )}
         </div>
@@ -741,6 +536,26 @@ export function BoardPanel({
           </div>
         </footer>
       )}
+
+      {/* pinned 3D scene preview (T11) — click to open the Preview tab */}
+      {pinnedPreviewUrl ? (
+        <button
+          type="button"
+          onClick={onOpenPreview}
+          title="Open the 3D preview"
+          className="group absolute bottom-24 right-4 z-10 hidden lg:block"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={pinnedPreviewUrl}
+            alt="Pinned 3D scene preview"
+            className="size-16 rounded-2xl object-cover shadow-lg ring-2 ring-[#D9623B]/40 transition-transform group-hover:scale-105"
+          />
+          <span className="mt-1 block text-center text-[10px] font-medium text-muted-foreground">
+            Scene preview
+          </span>
+        </button>
+      ) : null}
     </div>
   )
 }

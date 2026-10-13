@@ -1,19 +1,26 @@
 // components/workspace/agent-plan.ts
 //
 // Turns what the agent streams (the `structured-output` part of an assistant message,
-// i.e. your AgentPlanSchema) into the Board + chat view the UI renders.
+// i.e. AgentPlanSchema) into the Board + chat view the UI renders.
 //
-// The reading is deliberately tolerant: it accepts a few common field names so it works
-// with your schema as-is. If your AgentPlanSchema uses different names, adjust the
-// `first(...)` key lists in `toAlternative` / `readMessagePlan`, that's the only place.
+// AgentPlanSchema references products by id only (summary, searchQuery, productIds,
+// ...). The product details (title, price, retailer, image) ride along in the same
+// assistant message, on the `search_channel3` tool-call parts — `output` on live
+// streamed parts, `result` on parts persisted by /api/chat. `toBoard` resolves the
+// plan's productIds through those search results, so a live stream and a reloaded
+// history produce the same board. A refinement plan may reuse ids from an earlier
+// run's search ("keep the unchanged items, search only for the replacements"), so
+// `readLatestPlan` seeds the id catalog from every message before the plan too.
 //
-// Expected plan shape (any extra fields are ignored):
+// The reading is deliberately tolerant: it also accepts plans that carry full
+// products inline (any extra fields are ignored):
 //   {
-//     reply: string,                 // what the assistant says in chat
+//     reply?: string,                // what the assistant says in chat (or summary)
 //     title?: string,
 //     category?: 'furniture' | 'gaming',
 //     budget?: number,
-//     products: [{
+//     productIds: string[],          // resolved against search_channel3 results
+//     products?: [{                  // optional inline variant
 //       slot?: string,               // e.g. "Floor lamp" (falls back to the product name)
 //       name: string, retailer: string, price: number,
 //       imageUrl?: string, url?: string, color?: string,
@@ -65,6 +72,16 @@ const num = (v: unknown) => {
 const first = (o: Loose, keys: string[]) =>
   keys.map((k) => o[k]).find((v) => v !== undefined && v !== null)
 
+/** Price as a plain number, tolerating the nested `{ amount, currency }` shape
+ * the search tools return (lib/types.ts Product.price). */
+function priceOf(raw: Loose): number | undefined {
+  const direct = num(first(raw, ['price', 'priceUsd', 'amount']))
+  if (direct !== undefined) return direct
+  const nested = raw.price
+  if (isObj(nested)) return num(first(nested, ['amount', 'price']))
+  return undefined
+}
+
 const palette = [
   '#C9A27A', '#B9A58B', '#7A8B6F', '#D8CDBA',
   '#8B6CFF', '#2F3E5C', '#E4DCCD', '#D9623B',
@@ -80,7 +97,7 @@ function toAlternative(raw: unknown, slot: string): Alternative | null {
   if (!isObj(raw)) return null
 
   const name = str(first(raw, ['name', 'title']))
-  const price = num(first(raw, ['price', 'priceUsd', 'amount']))
+  const price = priceOf(raw)
   if (!name || price === undefined) return null
 
   return {
@@ -105,14 +122,56 @@ function toCategory(value: unknown, fallback: Category): Category {
   return fallback
 }
 
+/* ---------- search results -> id catalog ---------- */
+
+/**
+ * Product payloads streamed inside tool-call parts. Live parts carry the tool
+ * output on `output`; the parts persisted by /api/chat carry it on `result`.
+ * search_channel3 returns `{ products: [...] }`; other tools have no `products`
+ * array and are ignored naturally.
+ */
+function toolProductsOf(part: Loose): Loose[] {
+  const payload = isObj(part.output) ? part.output : isObj(part.result) ? part.result : null
+  if (!payload) return []
+  return (Array.isArray(payload.products) ? payload.products : []).filter(isObj)
+}
+
+/** Index every search result in the message by product id (newest wins). */
+function collectToolProducts(message: LooseMessage, catalog: Map<string, Loose>) {
+  for (const part of message.parts ?? []) {
+    if (!isObj(part) || part.type !== 'tool-call') continue
+    for (const product of toolProductsOf(part)) {
+      const id = str(product.id)
+      if (id) catalog.set(id, product)
+    }
+  }
+}
+
 /* ---------- plan -> board ---------- */
 
-function toBoard(plan: Loose, complete: boolean, fallback: Category): Board {
-  const rawProducts = Array.isArray(plan.products)
+function toBoard(
+  plan: Loose,
+  complete: boolean,
+  fallback: Category,
+  catalog: Map<string, Loose>
+): Board {
+  const explicit = Array.isArray(plan.products)
     ? plan.products
     : Array.isArray(plan.items)
       ? plan.items
+      : null
+
+  // The agent's plan references products by id (AgentPlanSchema.productIds); the
+  // details come from the streamed search_channel3 results. Ids that never
+  // appeared in a search result (hallucinated) are skipped.
+  const resolved =
+    explicit === null && Array.isArray(plan.productIds)
+      ? plan.productIds
+          .map((id) => catalog.get(str(id) ?? ''))
+          .filter((p): p is Loose => isObj(p))
       : []
+
+  const rawProducts = explicit ?? resolved
 
   // While JSON is still streaming, the last array element may be half-written.
   const usable = complete ? rawProducts : rawProducts.slice(0, -1)
@@ -157,10 +216,8 @@ function structuredPart(message: LooseMessage): Loose | null {
   return null
 }
 
-export function readMessagePlan(
-  message: LooseMessage,
-  fallback: Category
-): PlanView | null {
+/** The structured plan object of an assistant message, if it has a readable one. */
+function planDataOf(message: LooseMessage): { plan: Loose; complete: boolean } | null {
   if (message.role !== 'assistant') return null
 
   const part = structuredPart(message)
@@ -169,14 +226,27 @@ export function readMessagePlan(
   const plan = isObj(part.data) ? part.data : isObj(part.partial) ? part.partial : null
   if (!plan) return null
 
-  const complete = isObj(part.data)
+  return { plan, complete: isObj(part.data) }
+}
+
+export function readMessagePlan(
+  message: LooseMessage,
+  fallback: Category,
+  catalog: Map<string, Loose> = new Map()
+): PlanView | null {
+  const data = planDataOf(message)
+  if (!data) return null
+
+  // Merge this message's own search results over any pre-seeded ones so its
+  // ids win.
+  collectToolProducts(message, catalog)
 
   return {
     messageId: message.id,
-    complete,
-    board: toBoard(plan, complete, fallback),
-    reply: str(first(plan, ['reply', 'message', 'summary', 'answer'])) ?? '',
-    suggestions: (Array.isArray(plan.suggestions) ? plan.suggestions : [])
+    complete: data.complete,
+    board: toBoard(data.plan, data.complete, fallback, catalog),
+    reply: str(first(data.plan, ['reply', 'message', 'summary', 'answer'])) ?? '',
+    suggestions: (Array.isArray(data.plan.suggestions) ? data.plan.suggestions : [])
       .map(str)
       .filter((s): s is string => !!s)
       .slice(0, 4),
@@ -187,11 +257,24 @@ export function readLatestPlan(
   messages: LooseMessage[],
   fallback: Category
 ): PlanView | null {
+  // Newest assistant message that carries a readable plan.
+  let index = -1
   for (let i = messages.length - 1; i >= 0; i--) {
-    const plan = readMessagePlan(messages[i], fallback)
-    if (plan) return plan
+    if (planDataOf(messages[i])) {
+      index = i
+      break
+    }
   }
-  return null
+  if (index === -1) return null
+
+  // A refinement plan may reuse ids from an earlier run's search ("keep the
+  // unchanged items, search only for the replacements"), so the catalog spans
+  // every message before the plan too. The plan message's own results are
+  // added last, inside readMessagePlan, so they override older duplicates.
+  const catalog = new Map<string, Loose>()
+  for (let i = 0; i < index; i++) collectToolProducts(messages[i], catalog)
+
+  return readMessagePlan(messages[index], fallback, catalog)
 }
 
 /**
@@ -263,7 +346,13 @@ export function toViewMessages(
 ): Message[] {
   const lastId = messages[messages.length - 1]?.id
 
+  // Product details arrive on search tool-call parts; keep a running catalog so
+  // each bubble's boardCount resolves ids against the searches before it.
+  const catalog = new Map<string, Loose>()
+
   return messages.flatMap((m): Message[] => {
+    collectToolProducts(m, catalog)
+
     if (m.role === 'user') {
       const text = textOf(m)
       return text ? [{ id: m.id, role: 'user', content: text }] : []
@@ -271,7 +360,7 @@ export function toViewMessages(
 
     if (m.role !== 'assistant') return []
 
-    const plan = readMessagePlan(m, opts.fallback)
+    const plan = readMessagePlan(m, opts.fallback, catalog)
     const live = opts.running && m.id === lastId
     const activity = activityOf(m, live)
     const content = plan?.reply || textOf(m)

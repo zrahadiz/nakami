@@ -78,6 +78,8 @@ export interface Thread {
   userId: string;
   name: string;
   firstPrompt: string | null;
+  /** Pinned 3D preview capture (thread-thumbnails bucket), null until pinned. */
+  previewImageUrl: string | null;
   createdAt: string; // ISO 8601
   updatedAt: string;
 }

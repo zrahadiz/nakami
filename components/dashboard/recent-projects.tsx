@@ -44,7 +44,7 @@ function hash(value: string) {
 const isGaming = (name: string) =>
   /gam|rgb|battlestation|streamer|esports|pc setup/i.test(name)
 
-function Cover({ id, name }: { id: string; name: string }) {
+function Cover({ id, name, previewUrl }: { id: string; name: string; previewUrl?: string | null }) {
   const gaming = isGaming(name)
   const palettes = gaming ? gamingPalettes : interiorPalettes
   const [a, b, c] = palettes[hash(id) % palettes.length]
@@ -59,22 +59,35 @@ function Cover({ id, name }: { id: string; name: string }) {
         background: `linear-gradient(135deg, ${a}, ${gaming ? '#14120F' : '#DDD3C0'})`,
       }}
     >
-      <span
-        className="absolute bottom-0 left-[8%] h-[46%] w-[44%] rounded-t-3xl transition-transform duration-300 group-hover:-translate-y-1"
-        style={{ background: b }}
-      />
-      <span
-        className="absolute right-[12%] top-[16%] size-14 rounded-full"
-        style={{ background: c }}
-      />
-      <span
-        className="absolute bottom-0 right-[10%] h-[62%] w-3 rounded-t-full"
-        style={{ background: ink }}
-      />
-      <Icon
-        className="absolute left-3.5 top-3.5 size-5"
-        style={{ color: ink, opacity: 0.55 }}
-      />
+      {previewUrl ? (
+        // Pinned 3D scene preview (T11) — falls back to the generated art.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={previewUrl}
+          alt=""
+          loading="lazy"
+          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
+        />
+      ) : (
+        <>
+          <span
+            className="absolute bottom-0 left-[8%] h-[46%] w-[44%] rounded-t-3xl transition-transform duration-300 group-hover:-translate-y-1"
+            style={{ background: b }}
+          />
+          <span
+            className="absolute right-[12%] top-[16%] size-14 rounded-full"
+            style={{ background: c }}
+          />
+          <span
+            className="absolute bottom-0 right-[10%] h-[62%] w-3 rounded-t-full"
+            style={{ background: ink }}
+          />
+          <Icon
+            className="absolute left-3.5 top-3.5 size-5"
+            style={{ color: ink, opacity: 0.55 }}
+          />
+        </>
+      )}
     </div>
   )
 }
@@ -265,7 +278,11 @@ export function RecentProjects() {
                     href={`/workspace/${thread.id}`}
                     className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card outline-none transition duration-200 hover:-translate-y-1 hover:shadow-lg focus-visible:ring-4 focus-visible:ring-[#D9623B]/25"
                   >
-                    <Cover id={String(thread.id)} name={thread.name} />
+                    <Cover
+                      id={String(thread.id)}
+                      name={thread.name}
+                      previewUrl={thread.previewImageUrl}
+                    />
 
                     <div className="flex flex-1 flex-col p-4">
                       <h3 className="line-clamp-2 font-medium leading-snug">
