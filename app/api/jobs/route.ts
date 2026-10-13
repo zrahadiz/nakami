@@ -17,7 +17,7 @@ import type { GenerationJob } from '@/lib/types'
 // client because clients cannot insert/update jobs directly. Jobs and assets
 // are only ever written by this route and the worker.
 
-export const maxDuration = 300
+// export const maxDuration = 300
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i

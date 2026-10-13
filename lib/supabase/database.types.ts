@@ -120,24 +120,21 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          parts: Json
-          role: string
+          messages_json: Json
           thread_id: string
           user_id: string
         }
         Insert: {
           created_at?: string
           id?: string
-          parts?: Json
-          role: string
+          messages_json?: Json
           thread_id: string
           user_id: string
         }
         Update: {
           created_at?: string
           id?: string
-          parts?: Json
-          role?: string
+          messages_json?: Json
           thread_id?: string
           user_id?: string
         }
@@ -145,7 +142,7 @@ export type Database = {
           {
             foreignKeyName: "messages_thread_id_fkey"
             columns: ["thread_id"]
-            isOneToOne: false
+            isOneToOne: true
             referencedRelation: "threads"
             referencedColumns: ["id"]
           },
@@ -310,7 +307,9 @@ export type CompositeTypes<
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : never
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
 
 export const Constants = {
   public: {

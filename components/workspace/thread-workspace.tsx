@@ -18,7 +18,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useChat, type UIMessage } from '@tanstack/ai-react'
+import { fetchServerSentEvents, useChat, type UIMessage } from '@tanstack/ai-react'
 import { usePathname, useSearchParams } from 'next/navigation'
 
 import {
@@ -31,7 +31,6 @@ import { readLatestSceneLayout } from '@/lib/workspace/scene-plan'
 import { BoardPanel } from './board-panel'
 import { ChatPanel } from './chat-panel'
 import { PreviewTab, type PreviewItem } from './preview-tab'
-import { createNakamiConnection } from '@/lib/workspace/nakami-connection'
 import { useJobs, type GenerateItem } from '@/lib/workspace/use-jobs'
 import { emptyBoard, swapTo, type Board, type Category } from '@/types/workspaces'
 
@@ -41,8 +40,6 @@ type Props = {
   firstPrompt?: string | null
   /** Pinned preview capture (threads.preview_image_url), if any. */
   initialPreviewUrl?: string | null
-  /** Chat history loaded from Supabase by the page (server side). */
-  initialMessages?: UIMessage[]
 }
 
 type Tab = 'chat' | 'board' | 'preview'
@@ -73,7 +70,6 @@ function WorkspaceInner({
   threadId,
   firstPrompt,
   initialPreviewUrl = null,
-  initialMessages = [],
 }: Props) {
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -86,12 +82,10 @@ function WorkspaceInner({
   const [sceneSelection, setSceneSelection] = useState<string | null>(null)
   const [pinnedPreview, setPinnedPreview] = useState<string | null>(initialPreviewUrl)
 
-  const connection = useMemo(() => createNakamiConnection(threadId), [threadId])
-
   const { messages, sendMessage, isLoading, error, stop, reload } = useChat({
-    connection,
+    connection: fetchServerSentEvents('/api/chat'),
     threadId,
-    initialMessages,
+    persistence: true,
   })
 
   const { byProduct, generate, generating, generateError } = useJobs(threadId)
@@ -126,15 +120,7 @@ function WorkspaceInner({
     const value = text.trim()
     if (!value) return
 
-    const locked = boardRef.current.products
-      .filter((p) => p.locked)
-      .map((p) => ({ slot: p.slot, name: p.name }))
-
-    // `body` rides along as forwardedProps; nakami-connection.ts reshapes it
-    // into the { threadId, message } your /api/chat route expects.
-    void sendMessage(value, {
-      body: { message: value, category: categoryRef.current, locked },
-    })
+    void sendMessage(value)
   }
 
   // First visit: run the prompt the thread was created with.
@@ -145,8 +131,6 @@ function WorkspaceInner({
     const key = `nakami:pending-prompt:${threadId}`
     const stored = sessionStorage.getItem(key)
     sessionStorage.removeItem(key)
-
-    if (initialMessages.length > 0) return
 
     const prompt = firstPrompt?.trim() || stored
     if (prompt) send(prompt)
