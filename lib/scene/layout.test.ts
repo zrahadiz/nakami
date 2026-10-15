@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test } from 'bun:test'
 import { rememberProducts } from '@/lib/product-registry'
+import { estimateDimensionsFromTitles } from '@/lib/agent/dimensions'
 import { ROOM_PRESETS, cmToM, rotationToward, wallAnchor } from './contract'
 import { buildSceneLayout } from './layout'
 
@@ -144,5 +145,26 @@ describe('buildSceneLayout', () => {
     const layout = buildSceneLayout({ productIds: [], roomType: 'home-office' })
     expect(layout.items).toEqual([])
     expect(layout.room).toEqual(ROOM_PRESETS['home-office'])
+  })
+
+  test('accepts pre-resolved estimates (client path, titles instead of the registry)', () => {
+    const layout = buildSceneLayout({
+      productIds: ['user-chair', 'user-rug'],
+      roomType: 'living-room',
+      estimates: estimateDimensionsFromTitles([
+        { productId: 'user-chair', title: 'Walnut Lounge Chair' },
+        { productId: 'user-rug', title: 'Hand-Woven Jute Rug' },
+      ]),
+    })
+
+    const byId = new Map(layout.items.map((item) => [item.productId, item]))
+    // "chair" resolves to the armchair box through the synonym fallback.
+    expect(byId.get('user-chair')?.role).toBe('seating')
+    expect(byId.get('user-chair')?.footprint).toEqual({
+      width: cmToM(85),
+      depth: cmToM(80),
+      height: cmToM(90),
+    })
+    expect(byId.get('user-rug')?.role).toBe('rug')
   })
 })

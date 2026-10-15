@@ -75,6 +75,20 @@ describe('resolveMockSampleFile', () => {
     expect(resolveMockSampleFile('fiddle leaf plant')).toBe('pottedPlant.glb')
   })
 
+  test('normalizes URL-encoded image sources (+ / %20 stand in for spaces)', () => {
+    // A "table lamp" must not resolve to the table sample just because the
+    // placeholder URL spells its name with '+' separators.
+    expect(
+      resolveMockSampleFile('https://placehold.co/600x400?text=Ceramic+Table+Lamp')
+    ).toBe('lampRoundTable.glb')
+    expect(
+      resolveMockSampleFile('https://placehold.co/600x400?text=Brass%20Arc%20Floor%20Lamp')
+    ).toBe('lampRoundFloor.glb')
+    expect(
+      resolveMockSampleFile('https://placehold.co/600x400?text=Solid+Oak+Dining+Table')
+    ).toBe('table.glb')
+  })
+
   test('is deterministic for unrecognized sources', () => {
     const first = resolveMockSampleFile('mystery object 42')
     expect(resolveMockSampleFile('mystery object 42')).toBe(first)

@@ -46,7 +46,6 @@ type Props = {
   onGenerateAll: () => void
   onRetryItem: (productId: string) => void
   onPinnedChange: (url: string | null) => void
-  onGoToBoard: () => void
   onGoToChat: () => void
 }
 
@@ -62,7 +61,6 @@ export function PreviewTab({
   onGenerateAll,
   onRetryItem,
   onPinnedChange,
-  onGoToBoard,
   onGoToChat,
 }: Props) {
   const captureRef = useRef<CanvasCapture | null>(null)
@@ -70,13 +68,13 @@ export function PreviewTab({
     captureRef.current = capture
   }, [])
 
-  // Empty state: the agent has not laid out the space yet.
+  // Empty state: no products on the board yet — describe the space in chat.
   if (!layout) {
     return (
       <EmptyScene
         icon={<MessagesSquare className="size-5 text-[#D9623B]" />}
         title="Your 3D scene appears here"
-        description="Describe your space in the chat — once the agent places products, they show up in this room."
+        description="Describe your space in the chat — the products you pick land in this room."
         action={
           <button
             type="button"
@@ -84,26 +82,6 @@ export function PreviewTab({
             className="rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-85"
           >
             Go to chat
-          </button>
-        }
-      />
-    )
-  }
-
-  // The layout references products that are no longer on the board.
-  if (items.length === 0) {
-    return (
-      <EmptyScene
-        icon={<Sparkles className="size-5 text-[#D9623B]" />}
-        title="No products to place"
-        description="The layout references products you removed from the board. Add them back and the scene rebuilds."
-        action={
-          <button
-            type="button"
-            onClick={onGoToBoard}
-            className="rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-85"
-          >
-            Go to products
           </button>
         }
       />

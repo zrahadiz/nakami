@@ -75,7 +75,9 @@ function hashSource(source: string): string {
  * anything unrecognized falls back to a stable hash.
  */
 export function resolveMockSampleIndex(source: string): number {
-  const haystack = source.toLowerCase()
+  // Sources may be URLs (image-to-3d placeholder / product images) where
+  // spaces arrive as '+' or '%20'; normalize so multi-word keywords match.
+  const haystack = source.toLowerCase().replace(/\+|%20/g, ' ')
   let bestIndex = -1
   let bestLength = 0
   for (let index = 0; index < SAMPLES.length; index++) {

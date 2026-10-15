@@ -1,4 +1,5 @@
 import { estimateDimensionsForProducts } from '@/lib/agent/dimensions'
+import type { DimensionEstimate } from '@/lib/types'
 import {
   FLOOR_Y,
   ROOM_PRESETS,
@@ -79,6 +80,12 @@ export interface BuildSceneLayoutInput {
   productIds: string[]
   roomType: RoomType
   notes?: string
+  /**
+   * Pre-resolved dimensions (client path). The default registry lookup is
+   * server-local, so the workspace passes title-derived estimates instead.
+   * Must cover exactly `productIds`, in order.
+   */
+  estimates?: DimensionEstimate[]
 }
 
 interface WorkItem {
@@ -98,9 +105,10 @@ export function buildSceneLayout({
   productIds,
   roomType,
   notes,
+  estimates: providedEstimates,
 }: BuildSceneLayoutInput): SceneLayout {
   const room = ROOM_PRESETS[roomType]
-  const estimates = estimateDimensionsForProducts(productIds)
+  const estimates = providedEstimates ?? estimateDimensionsForProducts(productIds)
 
   const items: WorkItem[] = estimates.map((estimate) => {
     const role = (estimate.category && ROLE_BY_CATEGORY[estimate.category]) || 'decor'

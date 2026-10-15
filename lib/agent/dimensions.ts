@@ -64,6 +64,12 @@ function resolveCategory(
       }
     }
   }
+
+  // Generic words the table has no key for: "Walnut Lounge Chair" and
+  // "Bouclé Accent Chair" share the armchair box.
+  if (/chair/.test(context.title.toLowerCase())) {
+    return { key: 'armchair', box: DIMENSION_TABLE.get('armchair')! }
+  }
   return null
 }
 
@@ -77,6 +83,28 @@ export function estimateDimensionsForProducts(
 ): DimensionEstimate[] {
   return productIds.map((productId) => {
     const match = resolveCategory(getProductContext(productId))
+    const box = match?.box ?? DEFAULT_BOX
+    return {
+      productId,
+      category: match?.key ?? null,
+      length: box.length,
+      width: box.width,
+      height: box.height,
+      unit: 'cm',
+    }
+  })
+}
+
+/**
+ * Registry-free variant for callers that already hold the product payloads
+ * (the client workspace): the registry is server-local, so titles are passed
+ * in explicitly instead of looked up by id.
+ */
+export function estimateDimensionsFromTitles(
+  inputs: ReadonlyArray<{ productId: string; title: string }>
+): DimensionEstimate[] {
+  return inputs.map(({ productId, title }) => {
+    const match = resolveCategory({ title, category: null })
     const box = match?.box ?? DEFAULT_BOX
     return {
       productId,

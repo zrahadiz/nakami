@@ -16,6 +16,9 @@ import {
   type LooseMessage,
 } from "@/lib/workspace/agent-plan";
 import { readLatestSceneLayout } from "@/lib/workspace/scene-plan";
+import { buildSceneLayout } from "@/lib/scene/layout";
+import { estimateDimensionsFromTitles } from "@/lib/agent/dimensions";
+import type { SceneLayout } from "@/lib/scene/contract";
 import { BoardPanel } from "./board-panel";
 import { ChatPanel } from "./chat-panel";
 import { PreviewTab, type PreviewItem } from "./preview-tab";
@@ -222,9 +225,27 @@ function WorkspaceInner({
 
   /* Preview scene (T10) */
 
-  // The layout the agent produced — read from the persisted tool call, so a
-  // reload restores the same scene.
-  const layout = useMemo(() => readLatestSceneLayout(loose), [loose]);
+  // The agent's persisted build_scene_layout result supplies the room it chose
+  // (type, window wall, notes). Its placements are NOT reused: a refinement run
+  // can change the products without re-running the tool, so a stale layout
+  // would render the agent's original picks instead of what the user chose in
+  // the Products tab. The scene is a function of the current board instead —
+  // the same deterministic engine, fed the products the user actually has.
+  const agentLayout = useMemo(() => readLatestSceneLayout(loose), [loose]);
+
+  const sceneLayout = useMemo<SceneLayout | null>(() => {
+    if (board.products.length === 0) return null;
+    return buildSceneLayout({
+      productIds: board.products.map((p) => p.id),
+      roomType: agentLayout?.room.type ?? "living-room",
+      notes: agentLayout?.notes,
+      estimates: estimateDimensionsFromTitles(
+        board.products.map((p) => ({ productId: p.id, title: p.name })),
+      ),
+    });
+    // board.products is replaced wholesale on every board change (swap, lock,
+    // refinement), so identity is the right dependency.
+  }, [board.products, agentLayout]);
 
   const productById = useMemo(
     () => new Map(board.products.map((p) => [p.id, p])),
@@ -232,8 +253,8 @@ function WorkspaceInner({
   );
 
   const previewItems = useMemo<PreviewItem[]>(() => {
-    if (!layout) return [];
-    return layout.items.flatMap((placement) => {
+    if (!sceneLayout) return [];
+    return sceneLayout.items.flatMap((placement) => {
       const product = productById.get(placement.productId);
       if (!product) return [];
       const job = byProduct.get(placement.productId) ?? null;
@@ -247,7 +268,7 @@ function WorkspaceInner({
         },
       ];
     });
-  }, [layout, productById, byProduct]);
+  }, [sceneLayout, productById, byProduct]);
 
   /* Selection (only slots that still exist) */
 
@@ -562,7 +583,7 @@ function WorkspaceInner({
                 {tab === "preview" ? (
                   <PreviewTab
                     threadId={threadId}
-                    layout={layout}
+                    layout={sceneLayout}
                     items={previewItems}
                     generating={generating}
                     generateError={generateError}
@@ -576,7 +597,6 @@ function WorkspaceInner({
                     onGenerateAll={handlePreviewGenerate}
                     onRetryItem={handlePreviewRetry}
                     onPinnedChange={setPinnedPreview}
-                    onGoToBoard={() => setTab("board")}
                     onGoToChat={() => setTab("chat")}
                   />
                 ) : (
@@ -661,7 +681,7 @@ function WorkspaceInner({
           {tab === "preview" && (
             <PreviewTab
               threadId={threadId}
-              layout={layout}
+              layout={sceneLayout}
               items={previewItems}
               generating={generating}
               generateError={generateError}
@@ -675,7 +695,6 @@ function WorkspaceInner({
               onGenerateAll={handlePreviewGenerate}
               onRetryItem={handlePreviewRetry}
               onPinnedChange={setPinnedPreview}
-              onGoToBoard={() => setTab("board")}
               onGoToChat={() => setTab("chat")}
             />
           )}
