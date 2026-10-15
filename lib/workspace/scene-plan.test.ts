@@ -57,12 +57,90 @@ describe('readLatestSceneLayout', () => {
   })
 
   test('skips in-flight and non-terminal states', () => {
-    for (const state of ['input-streaming', 'input-complete', 'output-streaming', 'awaiting-input']) {
+    for (const state of ['input-streaming', 'output-streaming', 'awaiting-input', 'approval-requested']) {
       const messages = [
         toolPart({ type: 'tool-call', name: 'build_scene_layout', state, output: { layout } }),
       ]
       expect(readLatestSceneLayout(messages)).toBeNull()
     }
+  })
+
+  test('reads a live terminal part (state: complete) with direct output', () => {
+    const messages = [
+      toolPart({ type: 'tool-call', name: 'build_scene_layout', state: 'complete', output: { layout } }),
+    ]
+    expect(readLatestSceneLayout(messages)).toEqual(layout)
+  })
+
+  test('input-complete without output has no layout (persisted call awaits its result part)', () => {
+    const messages = [
+      toolPart({
+        type: 'tool-call',
+        id: 'c1',
+        name: 'build_scene_layout',
+        state: 'input-complete',
+        input: { productIds: ['p1'] },
+      }),
+    ]
+    expect(readLatestSceneLayout(messages)).toBeNull()
+  })
+
+  test('pairs a persisted tool result across messages (reconstructed history)', () => {
+    const messages = [
+      toolPart({
+        type: 'tool-call',
+        id: 'c1',
+        name: 'build_scene_layout',
+        state: 'input-complete',
+        input: { productIds: ['p1'] },
+      }),
+      {
+        id: 'm2',
+        role: 'assistant',
+        parts: [
+          {
+            type: 'tool-result',
+            toolCallId: 'c1',
+            content: JSON.stringify({ layout }),
+            state: 'complete',
+          },
+        ],
+      },
+    ]
+    expect(readLatestSceneLayout(messages)).toEqual(layout)
+  })
+
+  test('pairs a tool result whose content is content parts (live result part)', () => {
+    const messages = [
+      toolPart({ type: 'tool-call', id: 'c1', name: 'build_scene_layout', state: 'input-complete' }),
+      {
+        id: 'm2',
+        role: 'assistant',
+        parts: [
+          {
+            type: 'tool-result',
+            toolCallId: 'c1',
+            content: [{ type: 'text', content: JSON.stringify({ layout }) }],
+            state: 'complete',
+          },
+        ],
+      },
+    ]
+    expect(readLatestSceneLayout(messages)).toEqual(layout)
+  })
+
+  test('pairs a result part within the same message', () => {
+    const messages = [
+      {
+        id: 'm1',
+        role: 'assistant',
+        parts: [
+          { type: 'tool-call', id: 'c1', name: 'build_scene_layout', state: 'complete', output: { layout } },
+          { type: 'tool-result', toolCallId: 'c1', content: JSON.stringify({ layout }), state: 'complete' },
+        ],
+      },
+    ]
+    expect(readLatestSceneLayout(messages)).toEqual(layout)
   })
 
   test('skips other tools and malformed layouts', () => {

@@ -4,10 +4,13 @@
 // SceneLayout the preview scene renders (the counterpart of agent-plan.ts,
 // which reads the structured plan).
 //
-// Tool-call parts arrive in two shapes, both read tolerantly:
-//   live (TanStack AI):  { type: 'tool-call', name, state, output }
-//   persisted history:   { type: 'tool-call', toolName, args, result }
-// The result itself is either { layout: SceneLayout } (what the tool returns)
+// The layout shows up in two shapes; both are read tolerantly:
+//   live (TanStack AI):  a finished ToolCallPart — { type: 'tool-call', name,
+//     state: 'complete', output } — plus its sibling ToolResultPart.
+//   persisted history (GET /api/chat reconstruct): tool-call parts always have
+//     state 'input-complete' and NO output — the result lives in a separate
+//     { type: 'tool-result', toolCallId, content } part, in its own message.
+// The result payload is either { layout: SceneLayout } (what the tool returns)
 // or the bare layout — accept both, and validate before trusting anything.
 
 import {
@@ -38,15 +41,27 @@ const isWall = (v: unknown): v is Wall =>
 const isItemRole = (v: unknown): v is ItemRole =>
   typeof v === 'string' && (ITEM_ROLES as readonly string[]).includes(v)
 
-/** States that have not produced their output yet — never read their payload. */
+/** ToolCallState values that have not produced output yet — never read a
+ *  payload from them. `input-complete` is deliberately NOT here: it is the
+ *  state persisted tool calls keep forever (reconstructed history), with the
+ *  output living in the matching tool-result part instead. */
 const IN_FLIGHT = new Set([
   'awaiting-input',
   'input-streaming',
-  'input-complete',
   'output-streaming',
+  'approval-requested',
+  'approval-responded',
 ])
 
-const TERMINAL = new Set(['output-complete', 'output-available', 'success', 'done'])
+/** States that carry the output on the part itself. `complete` is TanStack
+ *  AI's terminal ToolCallState; the rest are tolerated legacy spellings. */
+const TERMINAL = new Set([
+  'complete',
+  'output-complete',
+  'output-available',
+  'success',
+  'done',
+])
 
 /** Validate a payload into a SceneLayout, or reject it. */
 function toLayout(payload: unknown): SceneLayout | null {
@@ -115,23 +130,56 @@ function toLayout(payload: unknown): SceneLayout | null {
   }
 }
 
-/** The layout a single assistant message produced, or null. */
-export function readMessageSceneLayout(message: LooseMessage): SceneLayout | null {
+/** The layout a single assistant message produced, or null.
+ *  `layoutCallIds` lets a caller pair tool-result parts across messages
+ *  (persisted history); live results land in the same message as the call. */
+export function readMessageSceneLayout(
+  message: LooseMessage,
+  layoutCallIds?: ReadonlySet<string>
+): SceneLayout | null {
   if (message.role !== 'assistant') return null
 
-  for (const part of message.parts ?? []) {
-    if (!isObj(part) || part.type !== 'tool-call') continue
+  const parts = message.parts ?? []
 
+  // Ids of this message's build_scene_layout calls — a tool result in the
+  // same message pairs with them (live shape).
+  const localCallIds = new Set<string>()
+  for (const part of parts) {
+    if (!isObj(part) || part.type !== 'tool-call') continue
+    const name = part.toolName ?? part.name
+    if (name === 'build_scene_layout' && typeof part.id === 'string') {
+      localCallIds.add(part.id)
+    }
+  }
+
+  for (const part of parts) {
+    if (!isObj(part)) continue
+
+    // Tool-result part: the output for a call whose part has none (this is
+    // where reconstructed history keeps the layout).
+    if (part.type === 'tool-result') {
+      const callId = part.toolCallId
+      if (
+        typeof callId === 'string' &&
+        (localCallIds.has(callId) || layoutCallIds?.has(callId))
+      ) {
+        if (part.state === 'error') continue
+        const layout = toLayout(parseToolResultPayload(part.content))
+        if (layout) return layout
+      }
+      continue
+    }
+
+    if (part.type !== 'tool-call') continue
     const name = part.toolName ?? part.name
     if (name !== 'build_scene_layout') continue
 
     const state = typeof part.state === 'string' ? part.state : null
-    // Persisted history has no state; live parts must be terminal.
-    if (state) {
-      if (IN_FLIGHT.has(state)) continue
-      if (!TERMINAL.has(state)) continue
-    }
+    if (state && (IN_FLIGHT.has(state) || state === 'error')) continue
 
+    // A terminal part carries the output directly; a call that terminated
+    // without one (persisted 'input-complete') falls through to its result
+    // part, paired by id in an earlier/later message.
     const layout = toLayout(part.output ?? part.result ?? part.data)
     if (layout) return layout
   }
@@ -139,10 +187,49 @@ export function readMessageSceneLayout(message: LooseMessage): SceneLayout | nul
   return null
 }
 
-/** The most recent layout across the chat (newest wins). */
+/** Parse a ToolResultPart.content into the tool's return payload. Persisted
+ *  results are raw JSON strings; live ones may arrive as content parts. */
+function parseToolResultPayload(content: unknown): unknown {
+  if (typeof content === 'string') {
+    try {
+      return JSON.parse(content)
+    } catch {
+      return null
+    }
+  }
+  if (Array.isArray(content)) {
+    for (const part of content) {
+      if (!isObj(part) || part.type !== 'text') continue
+      const text = typeof part.content === 'string' ? part.content : part.text
+      if (typeof text !== 'string') continue
+      try {
+        return JSON.parse(text)
+      } catch {
+        // Not JSON — keep scanning the remaining text parts.
+      }
+    }
+    return null
+  }
+  return isObj(content) ? content : null
+}
+
+/** The most recent layout across the chat (newest wins). Pairs tool-call
+ *  parts with their result parts across messages, so reconstructed history
+ *  (where a call and its result live in separate messages) resolves too. */
 export function readLatestSceneLayout(messages: LooseMessage[]): SceneLayout | null {
+  const layoutCallIds = new Set<string>()
+  for (const message of messages) {
+    for (const part of message.parts ?? []) {
+      if (!isObj(part) || part.type !== 'tool-call') continue
+      const name = part.toolName ?? part.name
+      if (name === 'build_scene_layout' && typeof part.id === 'string') {
+        layoutCallIds.add(part.id)
+      }
+    }
+  }
+
   for (let i = messages.length - 1; i >= 0; i--) {
-    const layout = readMessageSceneLayout(messages[i])
+    const layout = readMessageSceneLayout(messages[i], layoutCallIds)
     if (layout) return layout
   }
   return null
