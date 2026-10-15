@@ -41,7 +41,10 @@ async function ThreadContent({ params }: { params: Promise<{ id: string }> }) {
 
   return (
     <div className="h-dvh min-h-0 overflow-hidden">
+      {/* Keyed by thread id so navigating between threads rebuilds the
+          workspace (and re-hydrates its per-thread scene selection). */}
       <ThreadWorkspace
+        key={id}
         threadId={id}
         firstPrompt={thread.first_prompt}
         initialPreviewUrl={thread.preview_image_url}

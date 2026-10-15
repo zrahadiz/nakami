@@ -45,17 +45,20 @@ type Props = {
   layout: SceneLayout | null;
   items: PreviewItem[];
   /** True while a generate request is in flight (used for button spinners). */
-  generating: boolean;
-  generateError: string | null;
-  selectedProductId: string | null;
-  pinnedPreviewUrl: string | null;
-  onSelectItem: (productId: string | null) => void;
-  onGenerateAll: () => void;
-  onRetryItem: (productId: string) => void;
-  onPinnedChange: (url: string | null) => void;
-  onGoToChat: () => void;
-  onGoToBoard?: () => void;
-};
+   generating: boolean
+   generateError: string | null
+   selectedProductId: string | null
+   pinnedPreviewUrl: string | null
+   /** True when the board has products but none placed in the scene yet. */
+   hasProducts: boolean
+   onSelectItem: (productId: string | null) => void
+   /** Generate the placed products that have no job yet. */
+   onGenerateAll: () => void
+   onRetryItem: (productId: string) => void
+   onPinnedChange: (url: string | null) => void
+   onGoToBoard: () => void
+   onGoToChat: () => void
+ }
 
 export function PreviewTab({
   threadId,
@@ -65,10 +68,12 @@ export function PreviewTab({
   generateError,
   selectedProductId,
   pinnedPreviewUrl,
+  hasProducts,
   onSelectItem,
   onGenerateAll,
   onRetryItem,
   onPinnedChange,
+  onGoToBoard,
   onGoToChat,
 }: Props) {
   const captureRef = useRef<CanvasCapture | null>(null);
@@ -95,20 +100,25 @@ export function PreviewTab({
     }
   }
 
-  // Empty state: no products on the board yet — describe the space in chat.
+  // Empty state: nothing placed in the scene yet. With products on the board,
+  // the next step is selecting them there; with an empty board, it's chatting.
   if (!layout) {
     return (
       <EmptyScene
         icon={<MessagesSquare className="size-5 text-[#D9623B]" />}
         title="Your 3D scene appears here"
-        description="Describe your space in the chat — the products you pick land in this room."
+        description={
+          hasProducts
+            ? 'Select products on the Products tab and hit "Generate 3D scene" to place them here.'
+            : 'Describe your space in the chat — the products you pick land in this room.'
+        }
         action={
           <button
             type="button"
-            onClick={onGoToChat}
+            onClick={hasProducts ? onGoToBoard : onGoToChat}
             className="rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background transition-opacity hover:opacity-85"
           >
-            Go to chat
+            {hasProducts ? 'Go to products' : 'Go to chat'}
           </button>
         }
       />
@@ -285,9 +295,9 @@ function ProductDock({
 }
 
 /**
- * SceneGeneratingOverlay — T11. Shows nothing once every job is ready and
- * nothing has failed; otherwise the per-product chips (with the generate-all
- * CTA before any job exists, retry buttons on failures).
+ * SceneGeneratingOverlay — T11. Placed products without a job get the
+ * generate-all CTA; queued/running/failed ones get status chips (with retry
+ * on failures). Renders nothing once every model is ready.
  */
 function SceneGeneratingOverlay({
   items,
@@ -300,6 +310,7 @@ function SceneGeneratingOverlay({
   onGenerateAll: () => void;
   onRetryItem: (productId: string) => void;
 }) {
+  const unstarted = items.filter((item) => !item.job)
   const pending = items.filter(
     (item) => item.job && item.job.status !== "ready",
   );
@@ -308,12 +319,13 @@ function SceneGeneratingOverlay({
   );
   const failed = pending.filter((item) => item.job?.status === "failed");
   const started = items.some((item) => item.job);
-  const allReady = items.every(
-    (item) => !item.job || item.job.status === "ready",
-  );
 
-  // Nothing started yet: the big CTA card.
-  if (!started && !generating) {
+  const allReady = items.every(
+    (item) => item.job && item.job.status === 'ready',
+  )
+
+  // Nothing generating yet: the big CTA card for the placed-but-unstarted.
+  if (unstarted.length > 0 && active.length === 0 && !generating) {
     return (
       <div className="absolute inset-0 grid place-items-center p-4">
         <div className="flex max-w-sm flex-col items-center gap-3 rounded-3xl bg-white/90 px-6 py-5 text-center shadow-lg backdrop-blur-sm">

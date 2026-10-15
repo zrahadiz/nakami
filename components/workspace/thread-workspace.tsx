@@ -91,6 +91,21 @@ function BackLink({
   );
 }
 
+/** The board selection stored for this thread (empty during SSR). The board
+ *  is empty on first paint either way, so this never changes server-rendered
+ *  output — it only kicks in once products stream in. */
+function readStoredSelection(threadId: string): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = window.localStorage.getItem(`nakami:scene-selection:${threadId}`);
+    const slots: unknown = raw === null ? null : JSON.parse(raw);
+    if (!Array.isArray(slots)) return new Set();
+    return new Set(slots.filter((slot): slot is string => typeof slot === "string"));
+  } catch {
+    return new Set();
+  }
+}
+
 // If your app already has a QueryClientProvider, delete this wrapper and render <WorkspaceInner /> directly.
 export function ThreadWorkspace(props: Props) {
   const [client] = useState(
@@ -122,7 +137,9 @@ function WorkspaceInner({
     parseTab(searchParams.get("tab")),
   );
   const [workedFor, setWorkedFor] = useState<Record<string, number>>({});
-  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(() =>
+    readStoredSelection(threadId),
+  );
   const [sceneSelection, setSceneSelection] = useState<string | null>(null);
   const [pinnedPreview, setPinnedPreview] = useState<string | null>(
     initialPreviewUrl,
@@ -145,6 +162,25 @@ function WorkspaceInner({
   const runStartRef = useRef<number | null>(null);
   const boardMessageRef = useRef<string | null>(null);
 
+  useEffect(() => {
+    boardRef.current = board;
+    categoryRef.current = category;
+    messagesRef.current = messages;
+  }, [board, category, messages]);
+
+  // The board selection defines the 3D scene, so it survives reloads: every
+  // change is mirrored to localStorage (hydrated by readStoredSelection above;
+  // the page keys this component by thread id, so it re-runs per thread).
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        `nakami:scene-selection:${threadId}`,
+        JSON.stringify([...selected]),
+      );
+    } catch {
+      /* storage unavailable — the selection just won't survive a reload */
+    }
+  }, [selected, threadId]);
   /** Set the tab and mirror it into the URL without a server round-trip. */
   function setTab(next: Tab) {
     setTabState(next);
@@ -252,22 +288,32 @@ function WorkspaceInner({
   // The agent's persisted build_scene_layout result supplies the room it chose
   // (type, window wall, notes). Its placements are NOT reused: a refinement run
   // can change the products without re-running the tool, so a stale layout
-  // would render the agent's original picks instead of what the user chose in
-  // the Products tab. The scene is a function of the current board instead —
-  // the same deterministic engine, fed the products the user actually has.
+  // would render the agent's original picks.
   const agentLayout = useMemo(() => readLatestSceneLayout(loose), [loose]);
 
+  // Scene membership: the products currently selected on the Products tab —
+  // "select items to place them together in 3D". Changing the selection
+  // changes the scene; unselected products stay out even if they were
+  // generated before (their jobs/cached models just make re-placing instant).
+  // The selection persists in localStorage so a reload restores the scene.
+  const sceneProducts = useMemo(
+    () => board.products.filter((p) => selected.has(p.slot)),
+    [board.products, selected],
+  );
+
   const sceneLayout = useMemo<SceneLayout | null>(() => {
-    if (board.products.length === 0) return null;
+    if (sceneProducts.length === 0) return null;
     return buildSceneLayout({
-      productIds: board.products.map((p) => p.id),
+      productIds: sceneProducts.map((p) => p.id),
       roomType: agentLayout?.room.type ?? "living-room",
       notes: agentLayout?.notes,
       estimates: estimateDimensionsFromTitles(
-        board.products.map((p) => ({ productId: p.id, title: p.name })),
+        sceneProducts.map((p) => ({ productId: p.id, title: p.name })),
       ),
     });
-  }, [board.products, agentLayout]);
+    // sceneProducts is rebuilt whenever the board or the jobs change, so
+    // identity is the right dependency.
+  }, [sceneProducts, agentLayout]);
 
   const productById = useMemo(
     () => new Map(board.products.map((p) => [p.id, p])),
@@ -336,17 +382,20 @@ function WorkspaceInner({
     );
   }
 
-  /** Preview tab: generate every placed product that has no finished job. */
+  /** Preview tab: generate the placed products that have no job yet. */
   function handlePreviewGenerate() {
     void generate(
-      previewItems.map((item) => ({
-        productId: item.productId,
-        imageUrl: item.imageUrl ?? undefined,
-        prompt: item.name,
-      })),
+      previewItems
+        .filter((item) => !item.job)
+        .map((item) => ({
+          productId: item.productId,
+          imageUrl: item.imageUrl ?? undefined,
+          prompt: item.name,
+        })),
     );
   }
 
+  /** Preview tab: regenerate one failed product. */
   function handlePreviewRetry(productId: string) {
     const item = previewItems.find((i) => i.productId === productId);
     if (!item) return;
@@ -604,6 +653,8 @@ function WorkspaceInner({
                     onGenerateAll={handlePreviewGenerate}
                     onRetryItem={handlePreviewRetry}
                     onPinnedChange={setPinnedPreview}
+                    hasProducts={board.products.length > 0}
+                    onGoToBoard={() => setTab("board")}
                     onGoToChat={() => setTab("chat")}
                   />
                 ) : (
@@ -702,6 +753,8 @@ function WorkspaceInner({
               onGenerateAll={handlePreviewGenerate}
               onRetryItem={handlePreviewRetry}
               onPinnedChange={setPinnedPreview}
+              hasProducts={board.products.length > 0}
+              onGoToBoard={() => setTab("board")}
               onGoToChat={() => setTab("chat")}
             />
           )}
