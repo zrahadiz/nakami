@@ -1,11 +1,13 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { Bell, LogOut, Plus, Settings, UserRound } from 'lucide-react'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
+import { Bell, LogOut, Settings, TvMinimal, UserRound } from "lucide-react";
+
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,41 +16,39 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { SidebarTrigger } from '@/components/ui/sidebar'
-// ⚠️ Adjust to your existing Supabase client import.
-import { createClient } from '@/lib/supabase/client'
+} from "@/components/ui/dropdown-menu";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { createClient } from "@/lib/supabase/client";
 
-// ⚠️ If you already export AppHeaderProps elsewhere, delete this and keep your import.
-type AppHeaderProps = { email?: string | null }
+type AppHeaderProps = { email?: string | null };
 
 const soon = (
   <span className="ml-auto rounded-full bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
     Soon
   </span>
-)
+);
 
 export function AppHeader({ email }: AppHeaderProps) {
-  const router = useRouter()
-  const [signingOut, setSigningOut] = useState(false)
+  const router = useRouter();
+  const [signingOut, setSigningOut] = useState(false);
 
-  const initial = email?.charAt(0).toUpperCase() ?? 'N'
-  const displayName = email ? email.split('@')[0] : 'My Account'
+  const initial = email?.charAt(0).toUpperCase() ?? "N";
+  const displayName = email ? email.split("@")[0] : "My Account";
 
   async function handleSignOut() {
-    setSigningOut(true)
-    const supabase = createClient()
+    setSigningOut(true);
+    const supabase = createClient();
 
-    const { error } = await supabase.auth.signOut()
+    const { error } = await supabase.auth.signOut();
 
     if (error) {
-      console.error(error)
-      setSigningOut(false)
-      return
+      console.error(error);
+      setSigningOut(false);
+      return;
     }
 
-    router.replace('/sign-in')
-    router.refresh()
+    router.replace("/sign-in");
+    router.refresh();
   }
 
   return (
@@ -59,8 +59,8 @@ export function AppHeader({ email }: AppHeaderProps) {
         <span className="hidden h-5 w-px bg-border sm:block" aria-hidden />
 
         <div className="min-w-0">
-          <h1 className="truncate font-[family-name:var(--font-display)] text-lg font-medium leading-none tracking-tight sm:text-xl">
-            Workspace
+          <h1 className="truncate font-(family-name:--font-display) text-lg font-medium leading-none tracking-tight sm:text-xl">
+            Dashboard
           </h1>
           <p className="mt-1 hidden truncate text-xs text-muted-foreground md:block">
             Your creative shopping workspace
@@ -69,16 +69,6 @@ export function AppHeader({ email }: AppHeaderProps) {
       </div>
 
       <div className="flex items-center gap-1.5 sm:gap-2">
-        {/* New board: icon on phones, labelled on larger screens */}
-        <Button
-          onClick={() => router.push('/home')}
-          aria-label="Start a new board"
-          className="h-10 rounded-xl bg-[#D9623B] px-3 text-white shadow-[0_8px_20px_-10px_rgba(217,98,59,0.9)] hover:bg-[#C4532D] sm:px-4"
-        >
-          <Plus className="size-4" />
-          <span className="hidden sm:inline">New board</span>
-        </Button>
-
         <Button
           variant="ghost"
           size="icon"
@@ -91,7 +81,6 @@ export function AppHeader({ email }: AppHeaderProps) {
         </Button>
 
         <DropdownMenu>
-          {/* The trigger renders its own <button>, so style it directly (no nested button). */}
           <DropdownMenuTrigger
             aria-label="Open account menu"
             className="rounded-full outline-none transition focus-visible:ring-4 focus-visible:ring-[#D9623B]/25"
@@ -128,13 +117,33 @@ export function AppHeader({ email }: AppHeaderProps) {
 
             <DropdownMenuSeparator />
 
-            <DropdownMenuItem disabled className="rounded-xl py-2.5">
+            <DropdownMenuItem className="rounded-xl py-2.5 cursor-pointer">
+              <Link href="/landing" className="group flex items-center gap-3">
+                <TvMinimal />
+                <div>
+                  <p className="font-medium">Landing Page</p>
+                  <p className="text-xs text-[#71717A] group-data-highlighted:text-[#A1A1AA]">
+                    Go to the landing page
+                  </p>
+                </div>
+              </Link>
+            </DropdownMenuItem>
+
+            <DropdownMenuSeparator />
+
+            <DropdownMenuItem
+              disabled
+              className="rounded-xl py-2.5 cursor-pointer"
+            >
               <UserRound />
               Profile
               {soon}
             </DropdownMenuItem>
 
-            <DropdownMenuItem disabled className="rounded-xl py-2.5">
+            <DropdownMenuItem
+              disabled
+              className="rounded-xl py-2.5 cursor-pointer "
+            >
               <Settings />
               Settings
               {soon}
@@ -154,5 +163,5 @@ export function AppHeader({ email }: AppHeaderProps) {
         </DropdownMenu>
       </div>
     </header>
-  )
+  );
 }

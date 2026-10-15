@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Armchair,
   ArrowRight,
@@ -11,57 +11,60 @@ import {
   Plus,
   RotateCw,
   Search,
-} from 'lucide-react'
+} from "lucide-react";
 
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-// ⚠️ Keep your existing imports for these; adjust paths if they differ.
-import { createThread, getThreads } from '@/lib/api/threads'
-import type { Thread } from '@/lib/api/threads'
-
-/* ---------- Board cover (generated, deterministic) ---------- */
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { createThread, getThreads } from "@/lib/api/threads";
+import type { Thread } from "@/lib/api/threads";
 
 const interiorPalettes = [
-  ['#E8E1D5', '#C9A27A', '#7A8B6F'],
-  ['#EFE9DD', '#B9A58B', '#2F3E5C'],
-  ['#E4DCCD', '#D9623B', '#7A8B6F'],
-]
+  ["#E8E1D5", "#C9A27A", "#7A8B6F"],
+  ["#EFE9DD", "#B9A58B", "#2F3E5C"],
+  ["#E4DCCD", "#D9623B", "#7A8B6F"],
+];
 
 const gamingPalettes = [
-  ['#2A2250', '#8B6CFF', '#E8E1D5'],
-  ['#14120F', '#8B6CFF', '#2F3E5C'],
-]
+  ["#2A2250", "#8B6CFF", "#E8E1D5"],
+  ["#14120F", "#8B6CFF", "#2F3E5C"],
+];
 
 function hash(value: string) {
-  let h = 0
-  for (let i = 0; i < value.length; i++) h = (h * 31 + value.charCodeAt(i)) | 0
-  return Math.abs(h)
+  let h = 0;
+  for (let i = 0; i < value.length; i++) h = (h * 31 + value.charCodeAt(i)) | 0;
+  return Math.abs(h);
 }
 
 // Heuristic until threads store a real category.
 const isGaming = (name: string) =>
-  /gam|rgb|battlestation|streamer|esports|pc setup/i.test(name)
+  /gam|rgb|battlestation|streamer|esports|pc setup/i.test(name);
 
-function Cover({ id, name, previewUrl }: { id: string; name: string; previewUrl?: string | null }) {
-  const gaming = isGaming(name)
-  const palettes = gaming ? gamingPalettes : interiorPalettes
-  const [a, b, c] = palettes[hash(id) % palettes.length]
-  const Icon = gaming ? Gamepad2 : Armchair
-  const ink = gaming ? '#E8E1D5' : '#1E1B18'
+function Cover({
+  id,
+  name,
+  previewUrl,
+}: {
+  id: string;
+  name: string;
+  previewUrl?: string | null;
+}) {
+  const gaming = isGaming(name);
+  const palettes = gaming ? gamingPalettes : interiorPalettes;
+  const [a, b, c] = palettes[hash(id) % palettes.length];
+  const Icon = gaming ? Gamepad2 : Armchair;
+  const ink = gaming ? "#E8E1D5" : "#1E1B18";
 
   return (
     <div
       aria-hidden
       className="relative h-40 overflow-hidden"
       style={{
-        background: `linear-gradient(135deg, ${a}, ${gaming ? '#14120F' : '#DDD3C0'})`,
+        background: `linear-gradient(135deg, ${a}, ${gaming ? "#14120F" : "#DDD3C0"})`,
       }}
     >
       {previewUrl ? (
-        // Pinned 3D scene preview (T11) — falls back to the generated art.
-        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={previewUrl}
           alt=""
@@ -89,80 +92,79 @@ function Cover({ id, name, previewUrl }: { id: string; name: string; previewUrl?
         </>
       )}
     </div>
-  )
+  );
 }
 
 /* ---------- Component ---------- */
-
 export function RecentProjects() {
-  const router = useRouter()
+  const router = useRouter();
 
-  const [threads, setThreads] = useState<Thread[]>([])
-  const [loading, setLoading] = useState(true)
-  const [creating, setCreating] = useState(false)
-  const [search, setSearch] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [reloadKey, setReloadKey] = useState(0)
+  const [threads, setThreads] = useState<Thread[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [search, setSearch] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
-    let cancelled = false
+    let cancelled = false;
 
     async function loadProjects() {
       try {
-        const data = await getThreads()
+        const data = await getThreads();
 
         if (!cancelled) {
-          setThreads(data)
+          setThreads(data);
         }
       } catch {
         if (!cancelled) {
-          setError('Failed to load boards')
+          setError("Failed to load boards");
         }
       } finally {
         if (!cancelled) {
-          setLoading(false)
+          setLoading(false);
         }
       }
     }
 
-    loadProjects()
+    loadProjects();
 
     return () => {
-      cancelled = true
-    }
-  }, [reloadKey])
+      cancelled = true;
+    };
+  }, [reloadKey]);
 
   function retry() {
-    setError(null)
-    setLoading(true)
-    setReloadKey((key) => key + 1)
+    setError(null);
+    setLoading(true);
+    setReloadKey((key) => key + 1);
   }
 
   async function handleNewProject() {
-    if (creating) return
+    if (creating) return;
 
-    setCreating(true)
+    setCreating(true);
 
     try {
-      const thread = await createThread('Untitled board')
+      const thread = await createThread("Untitled board");
 
-      router.push(`/workspace/${thread.id}`)
+      router.push(`/workspace/${thread.id}`);
     } catch {
-      setError('Failed to create board')
+      setError("Failed to create board");
     } finally {
-      setCreating(false)
+      setCreating(false);
     }
   }
 
   const filteredThreads = threads.filter((thread) =>
-    thread.name.toLowerCase().includes(search.toLowerCase())
-  )
+    thread.name.toLowerCase().includes(search.toLowerCase()),
+  );
 
   return (
     <section className="mx-auto mt-16 w-full max-w-6xl sm:mt-24">
       <div className="mb-6 flex flex-wrap items-end justify-between gap-x-4 gap-y-4">
         <div>
-          <h2 className="font-[family-name:var(--font-display)] text-3xl font-medium tracking-tight sm:text-4xl">
+          <h2 className="font-(family-name:--font-display) text-3xl font-medium tracking-tight sm:text-4xl">
             Recent boards
           </h2>
 
@@ -242,7 +244,7 @@ export function RecentProjects() {
                 )}
               </span>
 
-              <span className="mt-4 font-[family-name:var(--font-display)] text-xl font-medium">
+              <span className="mt-4 font-(family-name:--font-display) text-xl font-medium">
                 Start a new board
               </span>
 
@@ -270,7 +272,7 @@ export function RecentProjects() {
             {/* BOARD CARDS */}
             {!loading &&
               filteredThreads.map((thread) => {
-                const gaming = isGaming(thread.name)
+                const gaming = isGaming(thread.name);
 
                 return (
                   <Link
@@ -293,10 +295,12 @@ export function RecentProjects() {
                         <span className="flex items-center gap-1.5">
                           <span
                             className="size-1.5 rounded-full"
-                            style={{ background: gaming ? '#8B6CFF' : '#7A8B6F' }}
+                            style={{
+                              background: gaming ? "#8B6CFF" : "#7A8B6F",
+                            }}
                             aria-hidden
                           />
-                          {gaming ? 'Gaming setup' : 'Interior'}
+                          {gaming ? "Gaming setup" : "Interior"}
                         </span>
 
                         <span className="flex items-center gap-1 font-medium text-foreground/70 opacity-0 transition group-hover:opacity-100 group-focus-visible:opacity-100">
@@ -306,7 +310,7 @@ export function RecentProjects() {
                       </div>
                     </div>
                   </Link>
-                )
+                );
               })}
           </div>
 
@@ -325,5 +329,5 @@ export function RecentProjects() {
         </TabsContent>
       </Tabs>
     </section>
-  )
+  );
 }

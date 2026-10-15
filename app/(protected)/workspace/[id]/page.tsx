@@ -24,7 +24,7 @@ export default async function ThreadPage({
   if (!thread) notFound();
 
   return (
-<div className="h-dvh min-h-0 overflow-hidden">
+    <div className="h-dvh min-h-0 overflow-hidden">
       <ThreadWorkspace
         threadId={id}
         firstPrompt={thread.first_prompt}

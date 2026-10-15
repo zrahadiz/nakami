@@ -99,7 +99,7 @@ export async function updateSession(request: NextRequest) {
   // Redirect authenticated users away from auth pages
   if (user && isAuthRoute(request.nextUrl.pathname)) {
     const url = request.nextUrl.clone();
-    url.pathname = "/home";
+    url.pathname = "/dashboard";
     url.search = "";
 
     return copySession(NextResponse.redirect(url), supabaseResponse);

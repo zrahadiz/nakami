@@ -1,21 +1,5 @@
 "use client";
 
-// components/workspace/thread-workspace.tsx
-//
-// T7: the thread workspace shell. A working tab bar — Chat / Products /
-// Preview — with the active tab synced to the URL (?tab=chat|board|preview) so
-// a reload or shared link lands on the same view, and a slot for the
-// PreviewTab content (T11).
-//
-// URL sync: reads the initial tab through useSearchParams (SSR-safe), then
-// writes with history.replaceState — a pure client-side query swap, so
-// switching tabs never triggers a server round-trip.
-//
-// The Preview tab is fed by two pieces of derived state:
-// - the scene layout read from the persisted build_scene_layout tool call
-//   (reload-safe, see lib/workspace/scene-plan.ts)
-// - per-product job status from the Realtime jobs subscription (T10)
-
 import { useEffect, useMemo, useRef, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {

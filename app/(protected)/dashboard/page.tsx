@@ -13,9 +13,9 @@ import { PromptSuggestions } from "@/components/prompt/prompt-suggestions";
 import { PromptHero } from "@/components/prompt/prompt-hero";
 
 import { createThread } from "@/lib/api/threads";
-import { RecentProjects } from "./recent-projects";
+import { RecentProjects } from "@/components/dashboard/recent-projects";
 
-export function AppHome() {
+export default function Dashboard() {
   const router = useRouter();
 
   const [prompt, setPrompt] = useState("");

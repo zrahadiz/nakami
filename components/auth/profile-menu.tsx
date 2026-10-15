@@ -1,66 +1,63 @@
-'use client'
+"use client";
 
-import { useEffect, useRef, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
-import type { User } from '@supabase/supabase-js'
+import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
+import type { User } from "@supabase/supabase-js";
 
 interface ProfileMenuProps {
-  user: User
+  user: User;
 }
 
 export function ProfileMenu({ user }: ProfileMenuProps) {
-  const [isOpen, setIsOpen] = useState(false)
-  const menuRef = useRef<HTMLDivElement>(null)
-  const router = useRouter()
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   // Get initials from the user's name or email
   const displayName =
     user.user_metadata?.full_name ||
     user.user_metadata?.name ||
     user.email ||
-    'User'
+    "User";
 
   const initials = displayName
     .trim()
     .split(/\s+/)
     .map((part: string) => part[0])
-    .join('')
+    .join("")
     .slice(0, 2)
-    .toUpperCase()
+    .toUpperCase();
 
   // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (
-        menuRef.current &&
-        !menuRef.current.contains(event.target as Node)
-      ) {
-        setIsOpen(false)
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
       }
     }
 
-    document.addEventListener('mousedown', handleClickOutside)
+    document.addEventListener("mousedown", handleClickOutside);
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [])
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   async function handleLogout() {
-    const supabase = createClient()
+    const supabase = createClient();
 
-    const { error } = await supabase.auth.signOut()
+    const { error } = await supabase.auth.signOut();
 
     if (error) {
-      console.error('Failed to log out:', error.message)
-      return
+      console.error("Failed to log out:", error.message);
+      return;
     }
 
-    setIsOpen(false)
-    router.refresh()
-    router.push('/')
+    setIsOpen(false);
+    router.refresh();
+    router.push("/");
   }
 
   return (
@@ -99,12 +96,12 @@ export function ProfileMenu({ user }: ProfileMenuProps) {
           {/* Profile links */}
           <div className="py-1">
             <Link
-              href="/home"
+              href="/dashboard"
               role="menuitem"
               onClick={() => setIsOpen(false)}
               className="block rounded-xl px-3 py-2.5 text-sm text-[#1E1B18] transition hover:bg-[#EAE3D7]"
             >
-              My workspace
+              My dashboard
             </Link>
           </div>
 
@@ -122,5 +119,5 @@ export function ProfileMenu({ user }: ProfileMenuProps) {
         </div>
       )}
     </div>
-  )
+  );
 }

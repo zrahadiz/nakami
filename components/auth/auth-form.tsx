@@ -13,9 +13,15 @@ const inputClass =
   "w-full rounded-2xl border border-[#DDD4C4] bg-white/70 px-4 py-3.5 text-[15px] text-[#1E1B18] " +
   "placeholder:text-[#1E1B18]/35 outline-none transition " +
   "hover:border-[#C9BFAE] focus:border-[#D9623B] focus:bg-white focus:ring-4 focus:ring-[#D9623B]/15";
- 
-const strengthLabels = ["Enter a password", "Too weak", "Okay", "Good", "Strong"];
- 
+
+const strengthLabels = [
+  "Enter a password",
+  "Too weak",
+  "Okay",
+  "Good",
+  "Strong",
+];
+
 function getStrength(pw: string) {
   if (!pw) return 0;
   let s = 0;
@@ -25,7 +31,7 @@ function getStrength(pw: string) {
   if (/\d/.test(pw) || /[^A-Za-z0-9]/.test(pw)) s++;
   return Math.max(s, 1);
 }
- 
+
 function Field({
   id,
   label,
@@ -47,10 +53,19 @@ function Field({
     </div>
   );
 }
- 
+
 function EyeIcon({ off }: { off: boolean }) {
   return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg
+      viewBox="0 0 24 24"
+      className="h-5 w-5"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.7"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
       <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z" />
       <circle cx="12" cy="12" r="3" />
       {off && <path d="M4 4l16 16" />}
@@ -93,11 +108,11 @@ export function AuthForm({ mode }: AuthFormProps) {
         if (error) throw error;
 
         if (data.session) {
-          router.replace("/home");
+          router.replace("/dashboard");
           router.refresh();
         } else {
           setMessage(
-            "Check your email for a confirmation link to finish creating your account."
+            "Check your email for a confirmation link to finish creating your account.",
           );
         }
       } else {
@@ -108,14 +123,14 @@ export function AuthForm({ mode }: AuthFormProps) {
 
         if (error) throw error;
 
-        router.replace("/home");
+        router.replace("/dashboard");
         router.refresh();
       }
     } catch (err) {
       setError(
         err instanceof Error
           ? err.message
-          : "Something went wrong. Please try again."
+          : "Something went wrong. Please try again.",
       );
     } finally {
       setLoading(false);
@@ -123,9 +138,9 @@ export function AuthForm({ mode }: AuthFormProps) {
   }
 
   return (
-    <div className="w-full max-w-[420px]">
+    <div className="w-full max-w-105">
       <div className="mb-4">
-        <h1 className="font-[family-name:var(--font-display)] text-[2.5rem] font-medium leading-[1.05] tracking-tight text-[#1E1B18] sm:text-4xl">
+        <h1 className="font-(family-name:--font-display) text-[2.5rem] font-medium leading-[1.05] tracking-tight text-[#1E1B18] sm:text-4xl">
           {isRegister ? "Create your account" : "Welcome back"}
         </h1>
         <p className="mt-3 text-[15px] leading-relaxed text-[#1E1B18]/60">
@@ -134,7 +149,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             : "Sign in to pick up your boards where you left off."}
         </p>
       </div>
- 
+
       <form onSubmit={handleSubmit} className="space-y-5" noValidate={false}>
         {isRegister && (
           <Field id="name" label="Full name">
@@ -150,7 +165,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             />
           </Field>
         )}
- 
+
         <Field id="email" label="Email address">
           <input
             id="email"
@@ -164,7 +179,7 @@ export function AuthForm({ mode }: AuthFormProps) {
             placeholder="you@example.com"
           />
         </Field>
- 
+
         <Field
           id="password"
           label="Password"
@@ -176,12 +191,19 @@ export function AuthForm({ mode }: AuthFormProps) {
                     <span
                       key={i}
                       className={`h-1 flex-1 rounded-full transition-colors ${
-                        i <= strength ? (strength >= 3 ? "bg-[#7A8B6F]" : "bg-[#D9623B]") : "bg-[#E8E1D5]"
+                        i <= strength
+                          ? strength >= 3
+                            ? "bg-[#7A8B6F]"
+                            : "bg-[#D9623B]"
+                          : "bg-[#E8E1D5]"
                       }`}
                     />
                   ))}
                 </div>
-                <p className="mt-2 text-xs text-[#1E1B18]/55" aria-live="polite">
+                <p
+                  className="mt-2 text-xs text-[#1E1B18]/55"
+                  aria-live="polite"
+                >
                   {strengthLabels[strength]} · use at least 6 characters
                 </p>
               </div>
@@ -199,7 +221,9 @@ export function AuthForm({ mode }: AuthFormProps) {
               onChange={(e) => setPassword(e.target.value)}
               aria-describedby={isRegister ? "password-hint" : undefined}
               className={`${inputClass} pr-12`}
-              placeholder={isRegister ? "Create a password" : "Enter your password"}
+              placeholder={
+                isRegister ? "Create a password" : "Enter your password"
+              }
             />
             <button
               type="button"
@@ -212,19 +236,25 @@ export function AuthForm({ mode }: AuthFormProps) {
             </button>
           </div>
         </Field>
- 
+
         {error && (
-          <p role="alert" className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+          <p
+            role="alert"
+            className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+          >
             {error}
           </p>
         )}
- 
+
         {message && (
-          <p role="status" className="rounded-2xl border border-[#7A8B6F]/30 bg-[#7A8B6F]/10 px-4 py-3 text-sm text-[#3F4B38]">
+          <p
+            role="status"
+            className="rounded-2xl border border-[#7A8B6F]/30 bg-[#7A8B6F]/10 px-4 py-3 text-sm text-[#3F4B38]"
+          >
             {message}
           </p>
         )}
- 
+
         <button
           type="submit"
           disabled={loading}
@@ -232,23 +262,43 @@ export function AuthForm({ mode }: AuthFormProps) {
         >
           {loading ? (
             <>
-              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden>
-                <circle cx="12" cy="12" r="9" stroke="currentColor" strokeOpacity="0.3" strokeWidth="3" />
-                <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+              <svg
+                className="h-4 w-4 animate-spin"
+                viewBox="0 0 24 24"
+                fill="none"
+                aria-hidden
+              >
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="9"
+                  stroke="currentColor"
+                  strokeOpacity="0.3"
+                  strokeWidth="3"
+                />
+                <path
+                  d="M21 12a9 9 0 0 0-9-9"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                />
               </svg>
               Please wait…
             </>
           ) : (
             <>
               {isRegister ? "Create account" : "Sign in"}
-              <span className="transition-transform group-hover:translate-x-0.5" aria-hidden>
+              <span
+                className="transition-transform group-hover:translate-x-0.5"
+                aria-hidden
+              >
                 →
               </span>
             </>
           )}
         </button>
       </form>
- 
+
       <p className="mt-8 text-center text-sm text-[#1E1B18]/60">
         {isRegister ? "Already have an account?" : "New to Nakami?"}{" "}
         <Link
