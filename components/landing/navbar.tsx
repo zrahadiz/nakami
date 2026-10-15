@@ -5,32 +5,13 @@ import Link from "next/link";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { ProfileMenu } from "../auth/profile-menu";
+import Wordmark from "../ornaments/wordmark";
 
 const links = [
     { href: "#how-it-works", label: "How it works" },
     { href: "#features", label: "Features" },
     { href: "#checkout", label: "Checkout" },
 ];
-
-function Wordmark() {
-    return (
-        <Link
-            href="/"
-            className="inline-flex items-baseline gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[#D9623B]/50"
-        >
-            <span className="font-[family-name:var(--font-display)] text-2xl font-medium tracking-tight text-[#1E1B18]">
-                Nakami
-            </span>
-            <span
-                className="h-1.5 w-1.5 -translate-y-0.5 rounded-full bg-[#D9623B]"
-                aria-hidden
-            />
-            <span className="text-xs text-[#1E1B18]/40" aria-hidden>
-                中身
-            </span>
-        </Link>
-    );
-}
 
 export default function Navbar() {
     const [menuOpen, setMenuOpen] = useState(false);

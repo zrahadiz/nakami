@@ -1,18 +1,5 @@
 'use client'
 
-// components/workspace/preview-tab.tsx
-//
-// T11: the Preview tab of the thread workspace. Hosts the SceneCanvas (T10,
-// dynamically imported with ssr:false) with the scene states — empty,
-// generating, partial, complete, error — plus:
-//
-// - SceneGeneratingOverlay: per-product job chips fed by the Realtime jobs
-//   subscription, with retry CTAs on failures.
-// - SceneCornerThumb: captures the canvas on demand (JPEG data URL via the
-//   canvas' on-demand render — the same pixels a toBlob() call would read),
-//   pins it through POST/DELETE /api/threads/[id]/preview-image, and the pin
-//   shows in the corner of the Products tab (and can feed the thread list).
-
 import dynamic from 'next/dynamic'
 import { useCallback, useRef, useState } from 'react'
 import {

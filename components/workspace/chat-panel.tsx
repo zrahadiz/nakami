@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import {
   ArrowUp,
   Check,
@@ -9,32 +9,32 @@ import {
   RotateCw,
   Square,
   TriangleAlert,
-} from 'lucide-react'
+} from "lucide-react";
 
-import type { Category, Message } from '@/types/workspaces'
+import type { Category, Message } from "@/types/workspaces";
 
 const categories: { value: Category; label: string; accent: string }[] = [
-  { value: 'furniture', label: 'Furniture', accent: '#7A8B6F' },
-  { value: 'gaming', label: 'Gaming', accent: '#8B6CFF' },
-]
+  { value: "furniture", label: "Furniture", accent: "#7A8B6F" },
+  { value: "gaming", label: "Gaming", accent: "#8B6CFF" },
+];
 
 const steps = [
-  'Understanding your style…',
-  'Searching retailers…',
-  'Matching pieces to your budget…',
-  'Staging your board…',
-]
+  "Understanding your style…",
+  "Searching retailers…",
+  "Matching pieces to your budget…",
+  "Staging your board…",
+];
 
 function Thinking() {
-  const [index, setIndex] = useState(0)
+  const [index, setIndex] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(
       () => setIndex((i) => Math.min(i + 1, steps.length - 1)),
-      1600
-    )
-    return () => clearInterval(timer)
-  }, [])
+      1600,
+    );
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <div
@@ -42,12 +42,12 @@ function Thinking() {
       className="flex items-center gap-3 text-sm text-muted-foreground"
     >
       <span
-        className="size-2.5 animate-pulse rounded-full bg-gradient-to-r from-[#D9623B] to-[#8B6CFF]"
+        className="size-2.5 animate-pulse rounded-full bg-linear-to-r from-[#D9623B] to-[#8B6CFF]"
         aria-hidden
       />
       {steps[index]}
     </div>
-  )
+  );
 }
 
 function AssistantMark() {
@@ -56,12 +56,12 @@ function AssistantMark() {
       aria-hidden
       className="relative grid size-7 shrink-0 place-items-center rounded-lg bg-[#1E1B18] dark:bg-[#F2EDE3]"
     >
-      <span className="font-[family-name:var(--font-display)] text-sm leading-none text-[#F6F2EA] dark:text-[#1E1B18]">
+      <span className="font-(family-name:--font-display) text-sm leading-none text-[#F6F2EA] dark:text-[#1E1B18]">
         N
       </span>
       <span className="absolute right-1 top-1 size-1 rounded-full bg-[#D9623B]" />
     </span>
-  )
+  );
 }
 
 export function ChatPanel({
@@ -75,55 +75,55 @@ export function ChatPanel({
   onRetry,
   onShowBoard,
 }: {
-  messages: Message[]
-  running: boolean
-  error?: string | null
-  category: Category
-  onCategoryChange: (value: Category) => void
-  onSend: (text: string) => void
-  onStop?: () => void
-  onRetry?: () => void
+  messages: Message[];
+  running: boolean;
+  error?: string | null;
+  category: Category;
+  onCategoryChange: (value: Category) => void;
+  onSend: (text: string) => void;
+  onStop?: () => void;
+  onRetry?: () => void;
   /** Mobile only: jump to the board tab. */
-  onShowBoard: () => void
+  onShowBoard: () => void;
 }) {
-  const [input, setInput] = useState('')
-  const endRef = useRef<HTMLDivElement>(null)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const [input, setInput] = useState("");
+  const endRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const last = messages[messages.length - 1]
+  const last = messages[messages.length - 1];
   const lastIsLiveAssistant =
-    last?.role === 'assistant' && (last.content || last.activity?.length)
-  const showThinking = running && !lastIsLiveAssistant
+    last?.role === "assistant" && (last.content || last.activity?.length);
+  const showThinking = running && !lastIsLiveAssistant;
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-  }, [messages.length, last?.content, last?.activity?.length, running, error])
+    endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [messages.length, last?.content, last?.activity?.length, running, error]);
 
   useEffect(() => {
-    const el = textareaRef.current
-    if (!el) return
-    el.style.height = 'auto'
-    el.style.height = `${Math.min(el.scrollHeight, 160)}px`
-  }, [input])
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+  }, [input]);
 
   function submit() {
-    const value = input.trim()
-    if (!value || running) return
-    onSend(value)
-    setInput('')
+    const value = input.trim();
+    if (!value || running) return;
+    onSend(value);
+    setInput("");
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
-    if (event.key === 'Enter' && !event.shiftKey) {
-      event.preventDefault()
-      submit()
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      submit();
     }
   }
 
-  const lastIndex = messages.length - 1
+  const lastIndex = messages.length - 1;
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col bg-background">
+    <div className="flex h-full min-h-0 flex-col bg-background">
       {/* header */}
       <div className="flex h-14 shrink-0 items-center gap-2.5 border-b border-border px-4">
         <AssistantMark />
@@ -139,18 +139,18 @@ export function ChatPanel({
       <div className="min-h-0 flex-1 space-y-6 overflow-y-auto px-4 py-6">
         {messages.length === 0 && !running && (
           <div className="mx-auto mt-10 max-w-xs text-center">
-            <p className="font-[family-name:var(--font-display)] text-2xl font-medium">
+            <p className="font-(family-name:--font-display) text-2xl font-medium">
               Describe the vibe.
             </p>
             <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-              Tell me the space or setup, your style and a budget. I&apos;ll build
-              the board.
+              Tell me the space or setup, your style and a budget. I&apos;ll
+              build the board.
             </p>
           </div>
         )}
 
         {messages.map((message, index) =>
-          message.role === 'user' ? (
+          message.role === "user" ? (
             <div key={message.id} className="flex justify-end">
               <p className="max-w-[85%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-accent px-4 py-2.5 text-[15px] leading-relaxed">
                 {message.content}
@@ -168,7 +168,9 @@ export function ChatPanel({
                       <li
                         key={item.label}
                         className={`flex items-center gap-2 text-xs ${
-                          item.failed ? 'text-destructive' : 'text-muted-foreground'
+                          item.failed
+                            ? "text-destructive"
+                            : "text-muted-foreground"
                         }`}
                       >
                         {item.failed ? (
@@ -177,12 +179,12 @@ export function ChatPanel({
                           <Check className="size-3.5 text-[#7A8B6F]" />
                         ) : (
                           <span
-                            className="size-2 animate-pulse rounded-full bg-gradient-to-r from-[#D9623B] to-[#8B6CFF]"
+                            className="size-2 animate-pulse rounded-full bg-linear-to-r from-[#D9623B] to-[#8B6CFF]"
                             aria-hidden
                           />
                         )}
                         {item.label}
-                        {item.count > 1 ? ` ×${item.count}` : ''}
+                        {item.count > 1 ? ` ×${item.count}` : ""}
                       </li>
                     ))}
                   </ul>
@@ -228,7 +230,7 @@ export function ChatPanel({
                 )}
               </div>
             </div>
-          )
+          ),
         )}
 
         {showThinking && (
@@ -292,7 +294,7 @@ export function ChatPanel({
 
             <div role="radiogroup" aria-label="Category" className="flex gap-1">
               {categories.map((c) => {
-                const active = c.value === category
+                const active = c.value === category;
                 return (
                   <button
                     key={c.value}
@@ -302,8 +304,8 @@ export function ChatPanel({
                     onClick={() => onCategoryChange(c.value)}
                     className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs outline-none transition focus-visible:ring-2 focus-visible:ring-[#D9623B]/40 ${
                       active
-                        ? 'bg-foreground text-background'
-                        : 'text-foreground/60 hover:bg-accent'
+                        ? "bg-foreground text-background"
+                        : "text-foreground/60 hover:bg-accent"
                     }`}
                   >
                     <span
@@ -313,7 +315,7 @@ export function ChatPanel({
                     />
                     {c.label}
                   </button>
-                )
+                );
               })}
             </div>
 
@@ -335,12 +337,12 @@ export function ChatPanel({
                 aria-label="Send message"
                 className="ml-auto grid size-10 place-items-center rounded-xl bg-[#D9623B] text-white shadow-[0_8px_20px_-8px_rgba(217,98,59,0.8)] outline-none transition hover:bg-[#C4532D] focus-visible:ring-4 focus-visible:ring-[#D9623B]/30 disabled:opacity-40 disabled:shadow-none"
               >
-                <ArrowUp className="size-[18px]" />
+                <ArrowUp className="size-4.5" />
               </button>
             )}
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -1,24 +1,5 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
-
-function Wordmark({ dark = false }: { dark?: boolean }) {
-  return (
-    <Link
-      href="/"
-      className={`inline-flex items-baseline gap-2 rounded-md outline-none focus-visible:ring-2 focus-visible:ring-[#D9623B]/50 ${
-        dark ? "text-[#F2EDE3]" : "text-[#1E1B18]"
-      }`}
-    >
-      <span className="font-[family-name:var(--font-display)] text-2xl font-medium tracking-tight">
-        Nakami
-      </span>
-      <span className="h-1.5 w-1.5 -translate-y-0.5 rounded-full bg-[#D9623B]" aria-hidden />
-      <span className={`text-xs ${dark ? "text-[#F2EDE3]/50" : "text-[#1E1B18]/40"}`} aria-hidden>
-        中身
-      </span>
-    </Link>
-  );
-}
+import Wordmark from "../ornaments/wordmark";
 
 
 export function AuthShell({ children }: { children: ReactNode }) {
@@ -32,7 +13,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
 
         <div className="relative space-y-10">
           <div className="max-w-md space-y-4">
-            <h2 className="font-[family-name:var(--font-display)] text-4xl font-medium leading-[1.1] tracking-tight xl:text-5xl">
+            <h2 className="font-(family-name:--font-display) text-4xl font-medium leading-[1.1] tracking-tight xl:text-5xl">
               Shop the whole look, not the whole internet.
             </h2>
             <p className="text-base leading-relaxed text-[#F2EDE3]/65">

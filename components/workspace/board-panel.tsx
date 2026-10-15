@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from "react";
 import {
   Box,
   Check,
@@ -12,32 +12,32 @@ import {
   Repeat2,
   Trash2,
   TriangleAlert,
-} from 'lucide-react'
+} from "lucide-react";
 
-import type { Job } from '@/lib/workspace/use-jobs'
-import { money, total, type Board, type Product } from '@/types/workspaces'
+import type { Job } from "@/lib/workspace/use-jobs";
+import { money, total, type Board, type Product } from "@/types/workspaces";
 
 /* ---------- small pieces ---------- */
 
 function JobChip({ job }: { job?: Job }) {
-  if (!job) return null
+  if (!job) return null;
 
-  if (job.status === 'ready') {
+  if (job.status === "ready") {
     return (
       <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-[#5C6B52] px-2.5 py-1 text-[11px] font-medium text-white shadow">
         <Box className="size-3" />
         3D ready
       </span>
-    )
+    );
   }
 
-  if (job.status === 'failed') {
+  if (job.status === "failed") {
     return (
       <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-[#B3261E] px-2.5 py-1 text-[11px] font-medium text-white shadow">
         <TriangleAlert className="size-3" />
         3D failed
       </span>
-    )
+    );
   }
 
   return (
@@ -45,7 +45,7 @@ function JobChip({ job }: { job?: Job }) {
       <Loader2 className="size-3 animate-spin" />
       Generating 3D
     </span>
-  )
+  );
 }
 
 /* ---------- Product card ---------- */
@@ -61,30 +61,30 @@ function ProductCard({
   onToggleLock,
   onRemove,
 }: {
-  product: Product
-  index: number
-  selected: boolean
-  job?: Job
-  dimmed: boolean
-  onToggleSelect: (slot: string) => void
-  onSwap: (slot: string, altId: string) => void
-  onToggleLock: (slot: string) => void
-  onRemove: (slot: string) => void
+  product: Product;
+  index: number;
+  selected: boolean;
+  job?: Job;
+  dimmed: boolean;
+  onToggleSelect: (slot: string) => void;
+  onSwap: (slot: string, altId: string) => void;
+  onToggleLock: (slot: string) => void;
+  onRemove: (slot: string) => void;
 }) {
-  const [shown, setShown] = useState(false)
-  const [showAlts, setShowAlts] = useState(false)
+  const [shown, setShown] = useState(false);
+  const [showAlts, setShowAlts] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setShown(true), 60 + index * 70)
-    return () => clearTimeout(timer)
-  }, [index])
+    const timer = setTimeout(() => setShown(true), 60 + index * 70);
+    return () => clearTimeout(timer);
+  }, [index]);
 
   return (
     <li
       className={`flex flex-col overflow-hidden rounded-2xl border bg-card transition duration-500 ${
-        shown ? 'translate-y-0' : 'translate-y-3'
-      } ${shown ? (dimmed ? 'opacity-60' : 'opacity-100') : 'opacity-0'} ${
-        selected ? 'border-[#D9623B] ring-2 ring-[#D9623B]/20' : 'border-border'
+        shown ? "translate-y-0" : "translate-y-3"
+      } ${shown ? (dimmed ? "opacity-60" : "opacity-100") : "opacity-0"} ${
+        selected ? "border-[#D9623B] ring-2 ring-[#D9623B]/20" : "border-border"
       }`}
     >
       {/* image */}
@@ -92,7 +92,7 @@ function ProductCard({
         className="relative h-40 overflow-hidden"
         style={{
           background: product.imageUrl
-            ? '#ffffff'
+            ? "#ffffff"
             : `linear-gradient(135deg, ${product.color}, ${product.color}CC)`,
         }}
       >
@@ -105,7 +105,10 @@ function ProductCard({
             className="h-full w-full object-contain p-3"
           />
         ) : (
-          <Package aria-hidden className="absolute inset-0 m-auto size-9 text-black/25" />
+          <Package
+            aria-hidden
+            className="absolute inset-0 m-auto size-9 text-black/25"
+          />
         )}
 
         <button
@@ -116,8 +119,8 @@ function ProductCard({
           onClick={() => onToggleSelect(product.slot)}
           className={`absolute left-3 top-3 grid size-6 place-items-center rounded-md border-2 shadow outline-none transition focus-visible:ring-4 focus-visible:ring-[#D9623B]/30 ${
             selected
-              ? 'border-[#D9623B] bg-[#D9623B] text-white'
-              : 'border-black/20 bg-white text-transparent hover:border-[#D9623B]'
+              ? "border-[#D9623B] bg-[#D9623B] text-white"
+              : "border-black/20 bg-white text-transparent hover:border-[#D9623B]"
           }`}
         >
           <Check className="size-3.5" strokeWidth={3} />
@@ -151,9 +154,7 @@ function ProductCard({
           <span className="truncate rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
             {product.retailer}
           </span>
-          <span className="font-[family-name:var(--font-mono)] text-sm">
-            {money(product.price)}
-          </span>
+          <span className="font-mono text-sm">{money(product.price)}</span>
         </div>
 
         {/* actions */}
@@ -164,12 +165,16 @@ function ProductCard({
             aria-pressed={product.locked}
             className={`flex h-9 items-center gap-1.5 rounded-xl px-3 text-xs font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-[#D9623B]/40 ${
               product.locked
-                ? 'bg-[#D9623B] text-white'
-                : 'border border-border text-foreground/70 hover:bg-accent'
+                ? "bg-[#D9623B] text-white"
+                : "border border-border text-foreground/70 hover:bg-accent"
             }`}
           >
-            {product.locked ? <Lock className="size-3.5" /> : <LockOpen className="size-3.5" />}
-            {product.locked ? 'Locked' : 'Lock'}
+            {product.locked ? (
+              <Lock className="size-3.5" />
+            ) : (
+              <LockOpen className="size-3.5" />
+            )}
+            {product.locked ? "Locked" : "Lock"}
           </button>
 
           <button
@@ -177,7 +182,11 @@ function ProductCard({
             onClick={() => setShowAlts((v) => !v)}
             aria-expanded={showAlts}
             disabled={product.alternatives.length === 0}
-            title={product.alternatives.length === 0 ? 'No alternatives yet' : undefined}
+            title={
+              product.alternatives.length === 0
+                ? "No alternatives yet"
+                : undefined
+            }
             className="flex h-9 items-center gap-1.5 rounded-xl border border-border px-3 text-xs font-medium text-foreground/70 outline-none transition hover:bg-accent focus-visible:ring-2 focus-visible:ring-[#D9623B]/40 disabled:opacity-40"
           >
             <Repeat2 className="size-3.5" />
@@ -197,14 +206,14 @@ function ProductCard({
         {showAlts && (
           <ul className="mt-3 space-y-1.5 border-t border-border pt-3">
             {product.alternatives.map((alt) => {
-              const delta = alt.price - product.price
+              const delta = alt.price - product.price;
               return (
                 <li key={alt.id}>
                   <button
                     type="button"
                     onClick={() => {
-                      onSwap(product.slot, alt.id)
-                      setShowAlts(false)
+                      onSwap(product.slot, alt.id);
+                      setShowAlts(false);
                     }}
                     className="flex w-full items-center gap-3 rounded-xl p-2 text-left outline-none transition hover:bg-accent focus-visible:ring-2 focus-visible:ring-[#D9623B]/40"
                   >
@@ -217,7 +226,10 @@ function ProductCard({
                         className="size-8 shrink-0 rounded-lg bg-white object-contain"
                       />
                     ) : (
-                      <span className="size-8 shrink-0 rounded-lg" style={{ background: alt.color }} />
+                      <span
+                        className="size-8 shrink-0 rounded-lg"
+                        style={{ background: alt.color }}
+                      />
                     )}
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-sm">{alt.name}</span>
@@ -226,26 +238,30 @@ function ProductCard({
                       </span>
                     </span>
                     <span className="text-right">
-                      <span className="block font-[family-name:var(--font-mono)] text-xs">
+                      <span className="block font-mono text-xs">
                         {money(alt.price)}
                       </span>
                       <span
-                        className={`block font-[family-name:var(--font-mono)] text-[11px] ${
-                          delta <= 0 ? 'text-[#5C6B52]' : 'text-muted-foreground'
+                        className={`block font-mono text-[11px] ${
+                          delta <= 0
+                            ? "text-[#5C6B52]"
+                            : "text-muted-foreground"
                         }`}
                       >
-                        {delta === 0 ? 'same' : `${delta < 0 ? '−' : '+'}${money(Math.abs(delta))}`}
+                        {delta === 0
+                          ? "same"
+                          : `${delta < 0 ? "−" : "+"}${money(Math.abs(delta))}`}
                       </span>
                     </span>
                   </button>
                 </li>
-              )
+              );
             })}
           </ul>
         )}
       </div>
     </li>
-  )
+  );
 }
 
 /* ---------- Skeleton / empty ---------- */
@@ -254,7 +270,10 @@ function BoardSkeleton() {
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" aria-hidden>
       {[0, 1, 2].map((i) => (
-        <div key={i} className="overflow-hidden rounded-2xl border border-border bg-card">
+        <div
+          key={i}
+          className="overflow-hidden rounded-2xl border border-border bg-card"
+        >
           <div className="h-40 animate-pulse bg-muted" />
           <div className="space-y-3 p-4">
             <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
@@ -263,21 +282,22 @@ function BoardSkeleton() {
         </div>
       ))}
     </div>
-  )
+  );
 }
 
 function EmptyBoard() {
   return (
     <div className="mx-auto mt-16 max-w-sm rounded-3xl border-2 border-dashed border-input px-8 py-14 text-center">
-      <p className="font-[family-name:var(--font-display)] text-2xl font-medium">
+      <p className="font-(family-name:--font-display) text-2xl font-medium">
         Your board appears here
       </p>
       <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-        Describe a space in the chat and I&apos;ll find real products from different
-        retailers. Then select the ones you like to see them together in 3D.
+        Describe a space in the chat and I&apos;ll find real products from
+        different retailers. Then select the ones you like to see them together
+        in 3D.
       </p>
     </div>
-  )
+  );
 }
 
 /* ---------- Panel ---------- */
@@ -299,47 +319,47 @@ export function BoardPanel({
   onToggleLock,
   onRemove,
 }: {
-  board: Board
-  running: boolean
+  board: Board;
+  running: boolean;
   /** Selected product slots. */
-  selected: Set<string>
+  selected: Set<string>;
   /** Latest 3D job per product id. */
-  jobs: Map<string, Job>
-  generating: boolean
-  generateError: string | null
+  jobs: Map<string, Job>;
+  generating: boolean;
+  generateError: string | null;
   /** Pinned 3D scene preview, shown in the corner (opened via onOpenPreview). */
-  pinnedPreviewUrl: string | null
-  onOpenPreview: () => void
-  onToggleSelect: (slot: string) => void
-  onSelectAll: () => void
-  onClearSelection: () => void
-  onGenerate: (slots: string[]) => Promise<void>
-  onSwap: (slot: string, altId: string) => void
-  onToggleLock: (slot: string) => void
-  onRemove: (slot: string) => void
+  pinnedPreviewUrl: string | null;
+  onOpenPreview: () => void;
+  onToggleSelect: (slot: string) => void;
+  onSelectAll: () => void;
+  onClearSelection: () => void;
+  onGenerate: (slots: string[]) => Promise<void>;
+  onSwap: (slot: string, altId: string) => void;
+  onToggleLock: (slot: string) => void;
+  onRemove: (slot: string) => void;
 }) {
-  const [summaryOpen, setSummaryOpen] = useState(false)
+  const [summaryOpen, setSummaryOpen] = useState(false);
 
-  const { products, budget } = board
-  const sum = total(products)
-  const over = budget !== null && sum > budget
-  const pct = budget ? Math.min(100, (sum / budget) * 100) : 100
-  const allSelected = products.length > 0 && selected.size === products.length
+  const { products, budget } = board;
+  const sum = total(products);
+  const over = budget !== null && sum > budget;
+  const pct = budget ? Math.min(100, (sum / budget) * 100) : 100;
+  const allSelected = products.length > 0 && selected.size === products.length;
 
-  const byRetailer = new Map<string, { count: number; subtotal: number }>()
+  const byRetailer = new Map<string, { count: number; subtotal: number }>();
   for (const p of products) {
-    const entry = byRetailer.get(p.retailer) ?? { count: 0, subtotal: 0 }
-    entry.count += 1
-    entry.subtotal += p.price
-    byRetailer.set(p.retailer, entry)
+    const entry = byRetailer.get(p.retailer) ?? { count: 0, subtotal: 0 };
+    entry.count += 1;
+    entry.subtotal += p.price;
+    byRetailer.set(p.retailer, entry);
   }
 
   async function handleGenerate(slots: string[] = [...selected]) {
-    await onGenerate(slots)
+    await onGenerate(slots);
   }
 
   return (
-    <div className="relative flex min-h-0 flex-1 flex-col bg-background">
+    <div className="relative flex h-full min-h-0 flex-col bg-background">
       <div className="min-h-0 flex-1 overflow-y-auto">
         <div className="mx-auto max-w-5xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
           {products.length === 0 && running && <BoardSkeleton />}
@@ -350,10 +370,10 @@ export function BoardPanel({
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div className="min-w-0">
                   <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                    {board.category === 'gaming' ? 'Gaming setup' : 'Interior'}
+                    {board.category === "gaming" ? "Gaming setup" : "Interior"}
                   </p>
-                  <h2 className="mt-1 truncate font-[family-name:var(--font-display)] text-2xl font-medium tracking-tight sm:text-3xl">
-                    {board.title || 'Your board'}
+                  <h2 className="mt-1 truncate font-(family-name:--font-display) text-2xl font-medium tracking-tight sm:text-3xl">
+                    {board.title || "Your board"}
                   </h2>
                 </div>
 
@@ -363,7 +383,7 @@ export function BoardPanel({
                       role="status"
                       className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3.5 py-1.5 text-xs text-muted-foreground"
                     >
-                      <span className="size-2 animate-pulse rounded-full bg-gradient-to-r from-[#D9623B] to-[#8B6CFF]" />
+                      <span className="size-2 animate-pulse rounded-full bg-linear-to-r from-[#D9623B] to-[#8B6CFF]" />
                       Updating…
                     </span>
                   )}
@@ -371,80 +391,88 @@ export function BoardPanel({
               </div>
 
               <>
-                  {/* budget */}
-                  <div className="rounded-2xl border border-border bg-card p-4">
-                    <div className="flex items-baseline justify-between gap-3">
-                      <span className="text-sm text-muted-foreground">
-                        {budget ? 'Budget' : 'Board total'}
-                      </span>
-                      <span className="font-[family-name:var(--font-mono)] text-lg">
-                        {money(sum)}
-                        {budget ? (
-                          <span className="text-sm text-muted-foreground"> / {money(budget)}</span>
-                        ) : null}
-                      </span>
-                    </div>
-                    {budget ? (
-                      <>
-                        <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-                          <div
-                            className="h-full rounded-full transition-all duration-500"
-                            style={{ width: `${pct}%`, background: over ? '#B3261E' : '#7A8B6F' }}
-                          />
-                        </div>
-                        <p
-                          className={`mt-2 text-xs ${
-                            over ? 'text-destructive' : 'text-muted-foreground'
-                          }`}
-                        >
-                          {over ? `${money(sum - budget)} over budget` : `${money(budget - sum)} left`}
-                        </p>
-                      </>
-                    ) : null}
+                {/* budget */}
+                <div className="rounded-2xl border border-border bg-card p-4">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-sm text-muted-foreground">
+                      {budget ? "Budget" : "Board total"}
+                    </span>
+                    <span className="font-mono text-lg">
+                      {money(sum)}
+                      {budget ? (
+                        <span className="text-sm text-muted-foreground">
+                          {" "}
+                          / {money(budget)}
+                        </span>
+                      ) : null}
+                    </span>
                   </div>
-
-                  {/* selection toolbar */}
-                  <div className="flex items-center justify-between gap-3">
-                    <button
-                      type="button"
-                      role="checkbox"
-                      aria-checked={allSelected}
-                      onClick={allSelected ? onClearSelection : onSelectAll}
-                      className="flex items-center gap-2.5 rounded-lg py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[#D9623B]/40"
-                    >
-                      <span
-                        className={`grid size-5 place-items-center rounded-md border-2 transition ${
-                          allSelected
-                            ? 'border-[#D9623B] bg-[#D9623B] text-white'
-                            : 'border-input text-transparent'
+                  {budget ? (
+                    <>
+                      <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full transition-all duration-500"
+                          style={{
+                            width: `${pct}%`,
+                            background: over ? "#B3261E" : "#7A8B6F",
+                          }}
+                        />
+                      </div>
+                      <p
+                        className={`mt-2 text-xs ${
+                          over ? "text-destructive" : "text-muted-foreground"
                         }`}
                       >
-                        <Check className="size-3" strokeWidth={3} />
-                      </span>
-                      {allSelected ? 'Clear selection' : 'Select all'}
-                    </button>
-                    <p className="hidden text-xs text-muted-foreground sm:block">
-                      Select items to place them together in 3D
-                    </p>
-                  </div>
+                        {over
+                          ? `${money(sum - budget)} over budget`
+                          : `${money(budget - sum)} left`}
+                      </p>
+                    </>
+                  ) : null}
+                </div>
 
-                  <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {products.map((product, index) => (
-                      <ProductCard
-                        key={product.slot}
-                        product={product}
-                        index={index}
-                        selected={selected.has(product.slot)}
-                        job={jobs.get(product.id)}
-                        dimmed={running && !product.locked}
-                        onToggleSelect={onToggleSelect}
-                        onSwap={onSwap}
-                        onToggleLock={onToggleLock}
-                        onRemove={onRemove}
-                      />
-                    ))}
-                  </ul>
-                </>
+                {/* selection toolbar */}
+                <div className="flex items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    role="checkbox"
+                    aria-checked={allSelected}
+                    onClick={allSelected ? onClearSelection : onSelectAll}
+                    className="flex items-center gap-2.5 rounded-lg py-1 text-sm outline-none focus-visible:ring-2 focus-visible:ring-[#D9623B]/40"
+                  >
+                    <span
+                      className={`grid size-5 place-items-center rounded-md border-2 transition ${
+                        allSelected
+                          ? "border-[#D9623B] bg-[#D9623B] text-white"
+                          : "border-input text-transparent"
+                      }`}
+                    >
+                      <Check className="size-3" strokeWidth={3} />
+                    </span>
+                    {allSelected ? "Clear selection" : "Select all"}
+                  </button>
+                  <p className="hidden text-xs text-muted-foreground sm:block">
+                    Select items to place them together in 3D
+                  </p>
+                </div>
+
+                <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {products.map((product, index) => (
+                    <ProductCard
+                      key={product.slot}
+                      product={product}
+                      index={index}
+                      selected={selected.has(product.slot)}
+                      job={jobs.get(product.id)}
+                      dimmed={running && !product.locked}
+                      onToggleSelect={onToggleSelect}
+                      onSwap={onSwap}
+                      onToggleLock={onToggleLock}
+                      onRemove={onRemove}
+                    />
+                  ))}
+                </ul>
+              </>
             </>
           )}
         </div>
@@ -471,13 +499,20 @@ export function BoardPanel({
               disabled={generating}
               className="flex h-10 items-center gap-2 rounded-xl bg-[#D9623B] px-4 text-sm font-medium text-white shadow-[0_8px_20px_-10px_rgba(217,98,59,0.9)] outline-none transition hover:bg-[#C4532D] focus-visible:ring-4 focus-visible:ring-[#D9623B]/30 disabled:opacity-60"
             >
-              {generating ? <Loader2 className="size-4 animate-spin" /> : <Box className="size-4" />}
+              {generating ? (
+                <Loader2 className="size-4 animate-spin" />
+              ) : (
+                <Box className="size-4" />
+              )}
               Generate 3D scene
             </button>
           </div>
 
           {generateError && (
-            <p role="alert" className="mx-auto max-w-5xl px-4 pb-2.5 text-xs text-destructive sm:px-6 lg:px-8">
+            <p
+              role="alert"
+              className="mx-auto max-w-5xl px-4 pb-2.5 text-xs text-destructive sm:px-6 lg:px-8"
+            >
               {generateError}
             </p>
           )}
@@ -492,14 +527,17 @@ export function BoardPanel({
               <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6 lg:px-8">
                 <ul className="divide-y divide-border">
                   {[...byRetailer.entries()].map(([retailer, info]) => (
-                    <li key={retailer} className="flex items-center justify-between gap-4 py-2.5 text-sm">
+                    <li
+                      key={retailer}
+                      className="flex items-center justify-between gap-4 py-2.5 text-sm"
+                    >
                       <span>
                         {retailer}
                         <span className="ml-2 text-xs text-muted-foreground">
-                          {info.count} {info.count === 1 ? 'item' : 'items'}
+                          {info.count} {info.count === 1 ? "item" : "items"}
                         </span>
                       </span>
-                      <span className="font-[family-name:var(--font-mono)]">{money(info.subtotal)}</span>
+                      <span className="font-mono">{money(info.subtotal)}</span>
                     </li>
                   ))}
                 </ul>
@@ -517,10 +555,10 @@ export function BoardPanel({
 
           <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
             <div className="min-w-0">
-              <p className="font-[family-name:var(--font-mono)] text-xl leading-none">{money(sum)}</p>
+              <p className="font-mono text-xl leading-none">{money(sum)}</p>
               <p className="mt-1 truncate text-xs text-muted-foreground">
-                {products.length} items · {byRetailer.size}{' '}
-                {byRetailer.size === 1 ? 'retailer' : 'retailers'}
+                {products.length} items · {byRetailer.size}{" "}
+                {byRetailer.size === 1 ? "retailer" : "retailers"}
               </p>
             </div>
 
@@ -531,7 +569,9 @@ export function BoardPanel({
               className="flex h-11 shrink-0 items-center gap-2 rounded-xl border border-border px-4 text-sm font-medium outline-none transition hover:bg-accent focus-visible:ring-2 focus-visible:ring-[#D9623B]/40"
             >
               Order summary
-              <ChevronUp className={`size-4 transition-transform ${summaryOpen ? 'rotate-180' : ''}`} />
+              <ChevronUp
+                className={`size-4 transition-transform ${summaryOpen ? "rotate-180" : ""}`}
+              />
             </button>
           </div>
         </footer>
@@ -557,5 +597,5 @@ export function BoardPanel({
         </button>
       ) : null}
     </div>
-  )
+  );
 }
