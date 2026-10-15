@@ -6,6 +6,7 @@ import {
   Check,
   ImagePlus,
   LayoutGrid,
+  Loader2,
   RotateCw,
   Square,
   TriangleAlert,
@@ -125,13 +126,18 @@ export function ChatPanel({
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
       {/* header */}
-      <div className="flex h-14 shrink-0 items-center gap-2.5 border-b border-border px-4">
-        <AssistantMark />
-        <div className="min-w-0">
-          <p className="text-sm font-medium leading-none">Nakami assistant</p>
-          <p className="mt-1 text-xs leading-none text-muted-foreground">
-            Curates real items into one board
-          </p>
+      <div className="flex justify-between h-14 shrink-0 items-center gap-2.5 border-b border-border px-4">
+        <div className="flex items-center gap-3">
+          <AssistantMark />
+          <div className="min-w-0">
+            <p className="text-sm font-medium leading-none">Nakami assistant</p>
+            <p className="mt-1 text-xs leading-none text-muted-foreground">
+              Curates real items into one board
+            </p>
+          </div>
+        </div>
+        <div>
+          {running && <Loader2 className="size-4 animate-spin text-primary" />}
         </div>
       </div>
 

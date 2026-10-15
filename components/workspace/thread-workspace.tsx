@@ -2,13 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import {
-  fetchServerSentEvents,
-  useChat,
-  type UIMessage,
-} from "@tanstack/ai-react";
+import { fetchServerSentEvents, useChat } from "@tanstack/ai-react";
 import { usePathname, useSearchParams } from "next/navigation";
-
+import Link from "next/link";
 import {
   mergeBoard,
   readLatestPlan,
@@ -37,7 +33,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Loader2,
-  Sparkles,
+  ArrowLeft,
 } from "lucide-react";
 
 import {
@@ -51,18 +47,48 @@ import { Badge } from "@/components/ui/badge";
 
 type Props = {
   threadId: string;
-  /** The prompt the thread was created with (threads.first_prompt). */
   firstPrompt?: string | null;
-  /** Pinned preview capture (threads.preview_image_url), if any. */
   initialPreviewUrl?: string | null;
+  isNewThread?: boolean;
 };
 
 type Tab = "chat" | "board" | "preview";
-
 const TAB_VALUES: Tab[] = ["chat", "board", "preview"];
 
 function parseTab(value: string | null): Tab {
   return value === "board" || value === "preview" ? value : "chat";
+}
+
+function BackLink({
+  busy,
+  iconOnly = false,
+}: {
+  busy: boolean;
+  iconOnly?: boolean;
+}) {
+  return (
+    <Link
+      href="/dashboard"
+      onClick={(event) => {
+        if (
+          busy &&
+          !window.confirm(
+            "The AI is still working on your board. Leave anyway?",
+          )
+        ) {
+          event.preventDefault();
+        }
+      }}
+      aria-label="Back to dashboard"
+      title="Back to dashboard"
+      className={`inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg text-sm font-medium text-muted-foreground outline-none transition hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-primary/40 ${
+        iconOnly ? "w-8 justify-center" : "px-2"
+      }`}
+    >
+      <ArrowLeft className="size-4" />
+      {!iconOnly && <span>Dashboard</span>}
+    </Link>
+  );
 }
 
 // If your app already has a QueryClientProvider, delete this wrapper and render <WorkspaceInner /> directly.
@@ -85,6 +111,7 @@ function WorkspaceInner({
   threadId,
   firstPrompt,
   initialPreviewUrl = null,
+  isNewThread = false,
 }: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -102,29 +129,21 @@ function WorkspaceInner({
   );
   const [chatVisible, setChatVisible] = useState(true);
 
-  const { messages, sendMessage, isLoading, error, stop, reload } = useChat({
-    connection: fetchServerSentEvents("/api/chat"),
-    threadId,
-    persistence: true,
-  });
+  const { messages, sendMessage, isLoading, isHydrating, error, stop, reload } =
+    useChat({
+      connection: fetchServerSentEvents("/api/chat"),
+      threadId,
+      persistence: true,
+    });
 
   const { byProduct, generate, generating, generateError } = useJobs(threadId);
 
-  // Always-current copies for callbacks and effects. React's ref rule forbids
-  // writing refs during render, so the mirrors sync in an effect; it is
-  // declared before every consumer so it runs first after each commit.
   const boardRef = useRef(board);
   const categoryRef = useRef(category);
   const messagesRef = useRef(messages);
   const startedRef = useRef(false);
   const runStartRef = useRef<number | null>(null);
   const boardMessageRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    boardRef.current = board;
-    categoryRef.current = category;
-    messagesRef.current = messages;
-  }, [board, category, messages]);
 
   /** Set the tab and mirror it into the URL without a server round-trip. */
   function setTab(next: Tab) {
@@ -142,42 +161,6 @@ function WorkspaceInner({
 
     void sendMessage(value);
   }
-
-  // First visit: run the prompt the thread was created with.
-  useEffect(() => {
-    if (startedRef.current) return;
-    startedRef.current = true;
-
-    const key = `nakami:pending-prompt:${threadId}`;
-    const stored = sessionStorage.getItem(key);
-    sessionStorage.removeItem(key);
-
-    const prompt = firstPrompt?.trim() || stored;
-    if (prompt) send(prompt);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Record how long each run took ("Worked for 29s").
-  useEffect(() => {
-    if (isLoading) {
-      if (runStartRef.current === null) runStartRef.current = performance.now();
-      return;
-    }
-    if (runStartRef.current === null) return;
-
-    const seconds = Math.max(
-      1,
-      Math.round((performance.now() - runStartRef.current) / 1000),
-    );
-    runStartRef.current = null;
-
-    const lastAssistant = [...messagesRef.current]
-      .reverse()
-      .find((m) => m.role === "assistant");
-    if (lastAssistant) {
-      setWorkedFor((w) => ({ ...w, [lastAssistant.id]: seconds }));
-    }
-  }, [isLoading]);
 
   /* Derive chat + board from what the agent streams */
 
@@ -201,8 +184,51 @@ function WorkspaceInner({
     [loose, category],
   );
 
-  // Mirror the latest plan into editable board state. Products appear one by one
-  // while the structured JSON streams; locked items are preserved.
+  // First visit: run the prompt the thread was created with.
+  useEffect(() => {
+    if (startedRef.current || isHydrating) return;
+    startedRef.current = true;
+
+    const key = `nakami:pending-prompt:${threadId}`;
+    const stored = sessionStorage.getItem(key);
+    sessionStorage.removeItem(key);
+
+    // History already exists, or a run is still streaming: not a fresh thread.
+    if (messages.length > 0 || isLoading) return;
+
+    const prompt = firstPrompt?.trim() || stored;
+    if (prompt) send(prompt);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHydrating]);
+
+  // Record how long each run took ("Worked for 29s").
+  useEffect(() => {
+    if (isLoading) {
+      if (runStartRef.current === null) runStartRef.current = performance.now();
+      return;
+    }
+    if (runStartRef.current === null) return;
+
+    const seconds = Math.max(
+      1,
+      Math.round((performance.now() - runStartRef.current) / 1000),
+    );
+    runStartRef.current = null;
+
+    const lastAssistant = [...messagesRef.current]
+      .reverse()
+      .find((m) => m.role === "assistant");
+    if (lastAssistant) {
+      setWorkedFor((w) => ({ ...w, [lastAssistant.id]: seconds }));
+    }
+  }, [isLoading]);
+
+  useEffect(() => {
+    boardRef.current = board;
+    categoryRef.current = category;
+    messagesRef.current = messages;
+  }, [board, category, messages]);
+
   useEffect(() => {
     if (!latestPlan) return;
 
@@ -211,8 +237,6 @@ function WorkspaceInner({
       boardMessageRef.current !== null &&
       boardMessageRef.current !== latestPlan.messageId;
 
-    // A follow-up starts with only a few products streamed in. Keep the current
-    // board until the new plan catches up so it doesn't collapse and refill.
     const holding =
       isNewRun &&
       !latestPlan.complete &&
@@ -243,8 +267,6 @@ function WorkspaceInner({
         board.products.map((p) => ({ productId: p.id, title: p.name })),
       ),
     });
-    // board.products is replaced wholesale on every board change (swap, lock,
-    // refinement), so identity is the right dependency.
   }, [board.products, agentLayout]);
 
   const productById = useMemo(
@@ -271,7 +293,6 @@ function WorkspaceInner({
   }, [sceneLayout, productById, byProduct]);
 
   /* Selection (only slots that still exist) */
-
   const selectedSlots = useMemo(
     () =>
       new Set(
@@ -427,25 +448,8 @@ function WorkspaceInner({
                 <div className="flex h-full min-h-0 flex-col overflow-hidden bg-background">
                   {/* CHAT HEADER */}
                   <div className="flex h-14 shrink-0 items-center justify-between border-b px-4">
-                    <div className="flex items-center gap-2.5">
-                      <div className="flex size-8 items-center justify-center rounded-lg bg-primary/10">
-                        <Sparkles className="size-4 text-primary" />
-                      </div>
-
-                      <div>
-                        <h2 className="text-sm font-semibold">Nakami AI</h2>
-
-                        <p className="text-xs text-muted-foreground">
-                          Your shopping assistant
-                        </p>
-                      </div>
-                    </div>
-
+                    <BackLink busy={isLoading} iconOnly />
                     <div className="flex items-center gap-2">
-                      {isLoading && (
-                        <Loader2 className="size-4 animate-spin text-primary" />
-                      )}
-
                       <Button
                         variant="ghost"
                         size="icon"
@@ -494,16 +498,19 @@ function WorkspaceInner({
                 {/* LEFT */}
                 <div className="flex min-w-0 items-center gap-3">
                   {!chatVisible && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setChatVisible(true)}
-                      aria-label="Expand chat panel"
-                      title="Expand chat"
-                      className="size-8 shrink-0"
-                    >
-                      <PanelLeftOpen className="size-4" />
-                    </Button>
+                    <>
+                      <BackLink busy={isLoading} iconOnly />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setChatVisible(true)}
+                        aria-label="Expand chat panel"
+                        title="Expand chat"
+                        className="size-8 shrink-0"
+                      >
+                        <PanelLeftOpen className="size-4" />
+                      </Button>
+                    </>
                   )}
 
                   <div className="flex items-center gap-2">

@@ -321,9 +321,7 @@ export function BoardPanel({
 }: {
   board: Board;
   running: boolean;
-  /** Selected product slots. */
   selected: Set<string>;
-  /** Latest 3D job per product id. */
   jobs: Map<string, Job>;
   generating: boolean;
   generateError: string | null;
@@ -346,11 +344,14 @@ export function BoardPanel({
   const pct = budget ? Math.min(100, (sum / budget) * 100) : 100;
   const allSelected = products.length > 0 && selected.size === products.length;
 
-  const byRetailer = new Map<string, { count: number; subtotal: number }>();
-  for (const p of products) {
-    const entry = byRetailer.get(p.retailer) ?? { count: 0, subtotal: 0 };
-    entry.count += 1;
+  const summaryProducts = products.filter((p) => selected.has(p.slot));
+  const summarySum = total(summaryProducts);
+
+  const byRetailer = new Map<string, { subtotal: number; items: Product[] }>();
+  for (const p of summaryProducts) {
+    const entry = byRetailer.get(p.retailer) ?? { subtotal: 0, items: [] };
     entry.subtotal += p.price;
+    entry.items.push(p);
     byRetailer.set(p.retailer, entry);
   }
 
@@ -524,23 +525,39 @@ export function BoardPanel({
         <footer className="shrink-0 border-t border-border bg-card/95 backdrop-blur">
           {summaryOpen && (
             <div className="border-b border-border">
-              <div className="mx-auto max-w-5xl px-4 py-4 sm:px-6 lg:px-8">
-                <ul className="divide-y divide-border">
+              {/* max height keeps a long list from pushing the products off screen */}
+              <div className="mx-auto max-h-[40vh] max-w-5xl overflow-y-auto px-4 py-4 sm:px-6 lg:px-8">
+                <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+                  {selected.size > 0 ? "Selected items" : "All items"}
+                </p>
+
+                <ul className="space-y-4">
                   {[...byRetailer.entries()].map(([retailer, info]) => (
-                    <li
-                      key={retailer}
-                      className="flex items-center justify-between gap-4 py-2.5 text-sm"
-                    >
-                      <span>
-                        {retailer}
-                        <span className="ml-2 text-xs text-muted-foreground">
-                          {info.count} {info.count === 1 ? "item" : "items"}
+                    <li key={retailer}>
+                      <div className="flex items-center justify-between gap-4 text-sm font-medium">
+                        <span>{retailer}</span>
+                        <span className="font-(family-name:--font-mono)">
+                          {money(info.subtotal)}
                         </span>
-                      </span>
-                      <span className="font-mono">{money(info.subtotal)}</span>
+                      </div>
+
+                      <ul className="mt-1.5 space-y-1 border-l-2 border-border pl-3">
+                        {info.items.map((p) => (
+                          <li
+                            key={p.slot}
+                            className="flex items-start justify-between gap-4 text-sm text-muted-foreground"
+                          >
+                            <span className="min-w-0 truncate">{p.name}</span>
+                            <span className="shrink-0 font-(family-name:--font-mono)">
+                              {money(p.price)}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
                     </li>
                   ))}
                 </ul>
+
                 {/* TODO: replace with PayPal's official buttons once payments are built. */}
                 <button
                   type="button"
@@ -555,9 +572,13 @@ export function BoardPanel({
 
           <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
             <div className="min-w-0">
-              <p className="font-mono text-xl leading-none">{money(sum)}</p>
+              <p className="font-(family-name:--font-mono) text-xl leading-none">
+                {money(summarySum)}
+              </p>
               <p className="mt-1 truncate text-xs text-muted-foreground">
-                {products.length} items · {byRetailer.size}{" "}
+                {summaryProducts.length} {selected.size > 0 ? "selected " : ""}
+                {summaryProducts.length === 1 ? "item" : "items"} ·{" "}
+                {byRetailer.size}{" "}
                 {byRetailer.size === 1 ? "retailer" : "retailers"}
               </p>
             </div>
