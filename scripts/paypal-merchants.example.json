@@ -1,0 +1,20 @@
+[
+  {
+    "productId": "fallback-armchair-tan-leather",
+    "retailer": "Ashford Home",
+    "payeeEmail": "merchant-ashford-home@sandbox.example.com",
+    "payeeMerchantId": "REPLACE_WITH_SANDBOX_BUSINESS_PAYER_ID"
+  },
+  {
+    "productId": "fallback-armchair-walnut-lounge",
+    "retailer": "Oak & Ember",
+    "payeeEmail": "merchant-oak-ember@sandbox.example.com",
+    "payeeMerchantId": "REPLACE_WITH_SANDBOX_BUSINESS_PAYER_ID"
+  },
+  {
+    "retailer": "Maison Nord",
+    "productId": "fallback-armchair-boucle-accent",
+    "payeeEmail": "merchant-maison-nord@sandbox.example.com",
+    "payeeMerchantId": "REPLACE_WITH_SANDBOX_BUSINESS_PAYER_ID"
+  }
+]

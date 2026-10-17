@@ -660,6 +660,7 @@ function WorkspaceInner({
                 ) : (
                   <BoardPanel
                     board={board}
+                    threadId={threadId}
                     running={isLoading}
                     selected={selectedSlots}
                     jobs={byProduct}
@@ -713,6 +714,7 @@ function WorkspaceInner({
         >
           <BoardPanel
             board={board}
+            threadId={threadId}
             running={isLoading}
             selected={selectedSlots}
             jobs={byProduct}

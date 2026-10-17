@@ -9,12 +9,14 @@
     "lint": "eslint",
     "test": "bun test",
     "test:live": "bun test --env-file=.env.local",
-    "seed:samples": "bun scripts/seed-sample-models.ts"
+    "seed:samples": "bun scripts/seed-sample-models.ts",
+    "seed:merchants": "bun scripts/seed-paypal-merchants.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
     "@channel3/sdk": "^4.1.0",
     "@fal-ai/client": "^1.10.1",
+    "@paypal/react-paypal-js": "^10.6.0",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.1",
     "@supabase/ssr": "^0.12.7",

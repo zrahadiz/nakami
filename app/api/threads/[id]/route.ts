@@ -17,7 +17,8 @@ export async function GET(
         return Response.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const result = z.ulid().safeParse(ctx.params.id);
+    // Next 16: params is a Promise — await before reading the id.
+    const result = z.ulid().safeParse((await ctx.params).id);
     if (!result.success) {
         console.error(result.error);
         return Response.json({ error: result.error.message }, { status: 400 });

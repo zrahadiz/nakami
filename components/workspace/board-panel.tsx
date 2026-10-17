@@ -16,6 +16,7 @@ import {
 
 import type { Job } from "@/lib/workspace/use-jobs";
 import { money, total, type Board, type Product } from "@/types/workspaces";
+import { CheckoutPanel } from "./checkout-panel";
 
 /* ---------- small pieces ---------- */
 
@@ -304,6 +305,7 @@ function EmptyBoard() {
 
 export function BoardPanel({
   board,
+  threadId,
   running,
   selected,
   jobs,
@@ -320,6 +322,8 @@ export function BoardPanel({
   onRemove,
 }: {
   board: Board;
+  /** Checkout orders are anchored to the thread for the order history. */
+  threadId: string | null;
   running: boolean;
   selected: Set<string>;
   jobs: Map<string, Job>;
@@ -558,14 +562,10 @@ export function BoardPanel({
                   ))}
                 </ul>
 
-                {/* TODO: replace with PayPal's official buttons once payments are built. */}
-                <button
-                  type="button"
-                  disabled
-                  className="mt-4 h-12 w-full cursor-not-allowed rounded-full bg-muted text-sm font-medium text-muted-foreground"
-                >
-                  Payment coming soon
-                </button>
+                {/* Real PayPal multi-seller checkout (one purchase unit per
+                    product; the selected items — or all of them — are what
+                    the footer total shows). */}
+                <CheckoutPanel products={summaryProducts} threadId={threadId} />
               </div>
             </div>
           )}
