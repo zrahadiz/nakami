@@ -114,12 +114,31 @@ describe('buildPurchaseUnits', () => {
       referenceId: '1-prod-1',
       customId: '1-prod-1',
       payee: { merchantId: 'MERCH1', email: 'one@sandbox.nakami.dev' },
-      amount: { currency: 'USD', value: '899.00' },
+      amount: {
+        currency: 'USD',
+        value: '899.00',
+        breakdown: { itemTotal: { currency: 'USD', value: '899.00' } },
+      },
+      items: [
+        {
+          name: 'Tan Leather Armchair',
+          sku: 'prod-1',
+          quantity: '1',
+          unitAmount: { currency: 'USD', value: '899.00' },
+        },
+      ],
     })
     expect(units[1].referenceId).toBe('2-prod-2')
     expect(units[1].customId).toBe('2-prod-2')
     expect(units[1].payee.merchantId).toBe('MERCH2')
     expect(units[1].amount.value).toBe('499.00')
+    expect(units[1].amount.breakdown.itemTotal.value).toBe('499.00')
+    expect(units[1].items[0]).toEqual({
+      name: 'Walnut Lounge Chair',
+      sku: 'prod-2',
+      quantity: '2',
+      unitAmount: { currency: 'USD', value: '249.50' },
+    })
     expect(total).toBe(1398)
   })
 

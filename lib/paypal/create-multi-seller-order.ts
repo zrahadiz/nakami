@@ -75,7 +75,25 @@ export async function createMultiSellerOrder(input: {
         reference_id: unit.referenceId,
         custom_id: unit.customId,
         payee: payeePayload(unit.payee),
-        amount: { currency_code: unit.amount.currency, value: unit.amount.value },
+        amount: {
+          currency_code: unit.amount.currency,
+          value: unit.amount.value,
+          breakdown: {
+            item_total: {
+              currency_code: unit.amount.breakdown.itemTotal.currency,
+              value: unit.amount.breakdown.itemTotal.value,
+            },
+          },
+        },
+        items: unit.items.map((item) => ({
+          name: item.name,
+          sku: item.sku,
+          quantity: item.quantity,
+          unit_amount: {
+            currency_code: item.unitAmount.currency,
+            value: item.unitAmount.value,
+          },
+        })),
       })),
     },
     // Idempotency: a retried request (same internal order id) returns the
@@ -105,6 +123,17 @@ export async function createMultiSellerOrder(input: {
       .eq('id', order.id)
     throw new PayPalApiError(status, body, 'PayPal order response is missing id')
   }
+
+  // Persist the PayPal id before returning to the browser: capture and webhook
+  // reconciliation both look the order up by this column.
+  const { error: paypalIdError } = await supabase
+    .from('orders')
+    .update({
+      paypal_order_id: paypalOrderId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', order.id)
+  if (paypalIdError) throw paypalIdError
 
   const merchantIds = [...new Set(units.map((unit) => unit.payee.merchantId))]
   return {

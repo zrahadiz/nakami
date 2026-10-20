@@ -111,14 +111,31 @@ export function buildPurchaseUnits(
     if (!payee) {
       throw new CheckoutValidationError(`No PayPal merchant mapped for ${item.productId}`)
     }
-    const cents = Math.round(item.price * 100) * (item.quantity ?? 1)
+    const quantity = item.quantity ?? 1
+    const unitCents = Math.round(item.price * 100)
+    const cents = unitCents * quantity
     totalCents += cents
     const referenceId = purchaseRefFor(index, item.productId)
+    const unitValue = formatAmount(unitCents / 100)
     units.push({
       referenceId,
       customId: referenceId,
       payee,
-      amount: { currency: 'USD', value: formatAmount(cents / 100) },
+      amount: {
+        currency: 'USD',
+        value: formatAmount(cents / 100),
+        breakdown: {
+          itemTotal: { currency: 'USD', value: formatAmount(cents / 100) },
+        },
+      },
+      items: [
+        {
+          name: item.title,
+          sku: item.productId,
+          quantity: String(quantity),
+          unitAmount: { currency: 'USD', value: unitValue },
+        },
+      ],
     })
   })
   return { units, total: totalCents / 100 }

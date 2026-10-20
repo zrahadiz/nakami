@@ -2,11 +2,13 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import type { CheckoutItemInput, Payee } from './types'
 import { UnresolvedMerchantError } from './errors'
+import { pickRandomMerchant } from './merchant-pool'
 
 // "A PayPal sandbox merchant account for each product": paypal_merchants maps
 // a catalog product to the PayPal business account that receives its money.
-// Resolution falls back product -> retailer -> platform default, because
-// Channel3 ids are not enumerable at seed time.
+// Existing rows always win. A product seen for the first time gets a merchant
+// picked at random from scripts/paypal-merchants.json and that assignment is
+// persisted, so every later checkout pays the same account.
 //
 // Service-role client (bypasses RLS): the mapping is server configuration and
 // deliberately has no user-facing policies.
@@ -42,9 +44,10 @@ function defaultPayee(): Payee | null {
 }
 
 /**
- * Resolve the payee for every (merged) checkout item. Throws
- * UnresolvedMerchantError listing the products that have no mapping at all —
- * the route answers 503 and names them so the mapping can be fixed.
+ * Resolve the payee for every (merged) checkout item. Products with no row yet
+ * get a random merchant from scripts/paypal-merchants.json, persisted so later
+ * checkouts are stable. Throws UnresolvedMerchantError listing any products
+ * still unmapped when the pool is empty and no fallback applies.
  */
 export async function resolvePayees(
   items: CheckoutItemInput[],
@@ -65,12 +68,49 @@ export async function resolvePayees(
   for (const row of exactRows ?? []) byProduct.set(row.product_id, row)
 
   const missing = productIds.filter((id) => !byProduct.has(id))
-  const byRetailer = new Map<string, MerchantRow>()
   if (missing.length > 0) {
+    const itemByProduct = new Map(items.map((item) => [item.productId, item]))
+    const assignments = missing.flatMap((productId) => {
+      const merchant = pickRandomMerchant()
+      const item = itemByProduct.get(productId)
+      if (!merchant || !item) return []
+      return [
+        {
+          product_id: productId,
+          retailer: item.retailer,
+          payee_email: merchant.payeeEmail,
+          payee_merchant_id: merchant.payeeMerchantId,
+          env: 'sandbox',
+        },
+      ]
+    })
+
+    if (assignments.length > 0) {
+      // First checkout wins: if two requests race for a new product,
+      // ignoreDuplicates keeps whichever row landed first.
+      const { error: assignError } = await supabase
+        .from('paypal_merchants')
+        .upsert(assignments, { onConflict: 'product_id', ignoreDuplicates: true })
+      if (assignError) throw assignError
+
+      // Re-read so the response reflects the persisted assignment, even when
+      // another checkout inserted it between our select and upsert.
+      const { data: assignedRows, error: assignedError } = await supabase
+        .from('paypal_merchants')
+        .select('product_id, payee_email, payee_merchant_id')
+        .in('product_id', missing)
+      if (assignedError) throw assignedError
+      for (const row of assignedRows ?? []) byProduct.set(row.product_id, row)
+    }
+  }
+
+  const stillMissing = productIds.filter((id) => !byProduct.has(id))
+  const byRetailer = new Map<string, MerchantRow>()
+  if (stillMissing.length > 0) {
     const retailers = [
       ...new Set(
         items
-          .filter((item) => missing.includes(item.productId))
+          .filter((item) => stillMissing.includes(item.productId))
           .map((item) => item.retailer),
       ),
     ]

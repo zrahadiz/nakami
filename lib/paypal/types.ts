@@ -26,6 +26,18 @@ export interface CheckoutItemInput {
   slot?: string | null
 }
 
+// One product line inside a purchase unit, shown in PayPal's item details.
+export interface PurchaseUnitItem {
+  /** Product name. */
+  name: string
+  /** Catalog product id (PayPal SKU). */
+  sku: string
+  /** Whole number, serialized as a string per the Orders v2 schema. */
+  quantity: string
+  /** Per-unit price, exactly two decimals. */
+  unitAmount: { currency: 'USD'; value: string }
+}
+
 // Purchase-unit payload we send to PayPal (the subset we rely on).
 export interface PurchaseUnit {
   /** PayPal requires reference_id on every unit when there are several. */
@@ -34,7 +46,14 @@ export interface PurchaseUnit {
   customId: string
   payee: Payee
   /** Exactly two decimals, as PayPal requires. */
-  amount: { currency: 'USD'; value: string }
+  amount: {
+    currency: 'USD'
+    value: string
+    /** Required when items[].unit_amount is present. */
+    breakdown: { itemTotal: { currency: 'USD'; value: string } }
+  }
+  /** Product name + id, so PayPal's checkout and reports show what was bought. */
+  items: PurchaseUnitItem[]
 }
 
 // orders.status — kept in sync with the DB check constraint in the

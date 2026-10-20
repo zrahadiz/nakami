@@ -31,7 +31,7 @@ export class UnresolvedMerchantError extends Error {
   constructor(productIds: string[]) {
     super(
       'No PayPal merchant mapped for: ' + productIds.join(', ') +
-        ' (add rows to paypal_merchants via bun run seed:merchants)',
+        ' (add merchants to scripts/paypal-merchants.json)',
     )
     this.name = 'UnresolvedMerchantError'
     this.productIds = productIds
