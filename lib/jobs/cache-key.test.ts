@@ -22,4 +22,24 @@ describe('computeCacheKey', () => {
       computeCacheKey('text-to-3d', { prompt: 'a chair' })
     )
   })
+
+  test('includes the mock prompt hint only when requested', () => {
+    const imageUrl = 'https://x.test/shared.png'
+    const rug = computeCacheKey(
+      'image-to-3d',
+      { imageUrl, prompt: 'Rug' },
+      { includePrompt: true }
+    )
+    const chair = computeCacheKey(
+      'image-to-3d',
+      { imageUrl, prompt: 'Chair' },
+      { includePrompt: true }
+    )
+    expect(rug).not.toBe(chair)
+
+    // Real fal image-to-3D ignores the prompt, so the cache stays image-only.
+    expect(computeCacheKey('image-to-3d', { imageUrl, prompt: 'Rug' })).toBe(
+      computeCacheKey('image-to-3d', { imageUrl, prompt: 'Chair' })
+    )
+  })
 })

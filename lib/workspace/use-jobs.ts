@@ -27,7 +27,7 @@ export type Job = {
 export type GenerateItem = {
   productId: string
   imageUrl?: string
-  /** Used for text-to-3D when the product has no image. */
+  /** Text-to-3D prompt when there is no image; also a dev-mock sample hint. */
   prompt: string
 }
 
@@ -123,8 +123,10 @@ export function useJobs(threadId: string) {
             body: JSON.stringify({
               threadId,
               productId: item.productId,
-              // Your route needs exactly one of imageUrl / prompt.
-              ...(item.imageUrl ? { imageUrl: item.imageUrl } : { prompt: item.prompt }),
+              // imageUrl selects image-to-3D; prompt is the text fallback and
+              // also gives the dev mock a product name to match samples against.
+              ...(item.imageUrl ? { imageUrl: item.imageUrl } : {}),
+              prompt: item.prompt,
             }),
           })
 

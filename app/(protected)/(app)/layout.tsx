@@ -1,4 +1,4 @@
-// app/home/layout.tsx
+// Shared authenticated shell for the dashboard and orders pages.
 import { Suspense } from "react";
 import { connection } from "next/server";
 import { redirect } from "next/navigation";

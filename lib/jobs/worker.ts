@@ -8,6 +8,7 @@ import {
   type FalJobHandle,
 } from '@/lib/fal/client'
 import { FAL_MODELS, JOB_KINDS, type FalModelKind } from '@/lib/fal/models'
+import { getProductContext } from '@/lib/product-registry'
 import { createServiceClient } from '@/lib/supabase/service'
 import type { Tables } from '@/lib/supabase/database.types'
 
@@ -85,9 +86,17 @@ export async function runJob(jobId: string): Promise<void> {
 /** Submit the job to fal (first invocation) and record the request handle. */
 async function submitJob(supabase: ServiceClient, job: JobRow): Promise<FalJobHandle | null> {
   try {
+    // The mock picks a canned sample from this text; prefer the product name
+    // persisted with the job, with the in-process product registry as a
+    // fallback for older jobs that only stored the image URL.
+    const sourceHint =
+      job.input_prompt?.trim() ||
+      (job.product_id ? getProductContext(job.product_id)?.title : null) ||
+      undefined
+
     const handle =
       job.kind === 'image-to-3d'
-        ? await generateImageTo3D(job.input_url ?? '')
+        ? await generateImageTo3D(job.input_url ?? '', sourceHint)
         : await generateTextTo3D(job.input_prompt ?? '')
 
     const { error } = await supabase

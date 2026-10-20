@@ -45,12 +45,20 @@ function configureFal(): void {
   fal.config({ credentials })
 }
 
-async function submit(kind: FalModelKind, input: Record<string, unknown>): Promise<FalJobHandle> {
+async function submit(
+  kind: FalModelKind,
+  input: Record<string, unknown>,
+  sourceHint?: string,
+): Promise<FalJobHandle> {
   const model = FAL_MODELS[kind]
 
   if (isFalMockEnabled()) {
+    // The mock uses the hint (product name) to pick a semantically matching
+    // sample. It is never sent to fal for real image-to-3D generation.
     const source =
-      kind === 'image-to-3d' ? String(input.image_url ?? '') : String(input.prompt ?? '')
+      kind === 'image-to-3d'
+        ? String(sourceHint || input.image_url || '')
+        : String(input.prompt ?? '')
     return submitMockJob(kind, model.id, source)
   }
 
@@ -59,9 +67,15 @@ async function submit(kind: FalModelKind, input: Record<string, unknown>): Promi
   return { kind, modelId: model.id, requestId: queued.request_id }
 }
 
-/** Queue an image-to-3D generation (Trellis). Returns the fal request handle. */
-export async function generateImageTo3D(imageUrl: string): Promise<FalJobHandle> {
-  return submit('image-to-3d', buildImageTo3DInput(imageUrl))
+/**
+ * Queue an image-to-3D generation (Trellis). `sourceHint` (the product name) is
+ * only used by the dev mock to choose a matching sample.
+ */
+export async function generateImageTo3D(
+  imageUrl: string,
+  sourceHint?: string,
+): Promise<FalJobHandle> {
+  return submit('image-to-3d', buildImageTo3DInput(imageUrl), sourceHint)
 }
 
 /** Queue a text-to-3D generation (Hyper3D Rodin). Returns the fal request handle. */

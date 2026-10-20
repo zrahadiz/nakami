@@ -99,3 +99,33 @@ export interface CaptureResult {
    */
   processing?: boolean
 }
+
+// One purchased product inside a transaction (GET /api/checkout/orders).
+export interface TransactionItem {
+  id: string
+  productId: string
+  title: string
+  retailer: string
+  slot: string | null
+  unitPrice: number
+  quantity: number
+  purchaseRef: string
+  captureId: string | null
+  captureStatus: CaptureStatus | null
+  netAmount: number | null
+}
+
+// A checkout order plus its per-product capture state.
+export interface Transaction {
+  id: string
+  threadId: string | null
+  status: OrderStatus
+  currency: string
+  totalAmount: number
+  paypalOrderId: string | null
+  payerEmail: string | null
+  error: string | null
+  createdAt: string
+  updatedAt: string
+  items: TransactionItem[]
+}

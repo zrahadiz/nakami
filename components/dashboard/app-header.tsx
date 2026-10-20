@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 
 import { Bell, LogOut, Settings, TvMinimal, UserRound } from "lucide-react";
@@ -30,10 +30,12 @@ const soon = (
 
 export function AppHeader({ email }: AppHeaderProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [signingOut, setSigningOut] = useState(false);
 
   const initial = email?.charAt(0).toUpperCase() ?? "N";
   const displayName = email ? email.split("@")[0] : "My Account";
+  const isOrders = pathname === "/orders";
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -60,10 +62,10 @@ export function AppHeader({ email }: AppHeaderProps) {
 
         <div className="min-w-0">
           <h1 className="truncate font-(family-name:--font-display) text-lg font-medium leading-none tracking-tight sm:text-xl">
-            Dashboard
+            {isOrders ? "Orders" : "Dashboard"}
           </h1>
           <p className="mt-1 hidden truncate text-xs text-muted-foreground md:block">
-            Your creative shopping workspace
+            {isOrders ? "Your checkout history" : "Your creative shopping workspace"}
           </p>
         </div>
       </div>

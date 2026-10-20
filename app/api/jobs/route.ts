@@ -34,17 +34,11 @@ const postJobSchema = z
         imageUrl: z.url().optional(),
         prompt: z.string().trim().min(1).optional(),
     })
-    .refine(
-        (data) => {
-            const hasImage = data.imageUrl;
-            const hasPrompt = data.prompt;
-
-            return (hasImage && !hasPrompt) || (!hasImage && hasPrompt);
-        },
-        {
-            error: "Provide exactly one of imageUrl (image-to-3D) or prompt (text-to-3D)",
-        },
-    );
+    .refine((data) => Boolean(data.imageUrl || data.prompt), {
+        // imageUrl wins when both are present; prompt is kept as a source hint
+        // for the dev mock and as the text-to-3D input when there is no image.
+        error: "Provide imageUrl (image-to-3D) or prompt (text-to-3D)",
+    });
 
 const getJobSearchParams = z.object({
     threadId: z.uuid(),
@@ -103,10 +97,17 @@ export async function POST(request: Request) {
 
     const service = createServiceClient();
     const kind = imageUrl ? ("image-to-3d" as const) : ("text-to-3d" as const);
-    const cacheKey = computeCacheKey(kind, {
-        imageUrl: imageUrl,
-        prompt: prompt,
-    });
+    const cacheKey = computeCacheKey(
+        kind,
+        {
+            imageUrl: imageUrl,
+            prompt: prompt,
+        },
+        // Mock samples are chosen from the prompt, so the name has to be part
+        // of the cache identity there. Real fal image-to-3D depends only on
+        // the image URL.
+        { includePrompt: isFalMockEnabled() },
+    );
 
     const baseInsert = {
         user_id: user.id,

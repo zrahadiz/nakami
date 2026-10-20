@@ -48,21 +48,36 @@ interface MockSample {
 
 // Kenney "Furniture Kit" samples (CC0) — see public/models/README.md.
 const SAMPLES: MockSample[] = [
-  { file: 'tableCoffee.glb', keywords: ['coffee table'] },
-  { file: 'sideTable.glb', keywords: ['side table', 'nightstand'] },
+  { file: 'tableCoffee.glb', keywords: ['coffee table', 'cocktail table'] },
+  { file: 'sideTable.glb', keywords: ['side table', 'nightstand', 'end table'] },
   { file: 'table.glb', keywords: ['dining table', 'desk', 'table'] },
   { file: 'lampRoundTable.glb', keywords: ['table lamp'] },
   { file: 'lampRoundFloor.glb', keywords: ['floor lamp', 'lamp'] },
-  { file: 'lampSquareCeiling.glb', keywords: ['pendant', 'ceiling lamp'] },
-  { file: 'loungeSofa.glb', keywords: ['sofa', 'couch', 'loveseat'] },
-  { file: 'loungeDesignChair.glb', keywords: ['accent chair', 'lounge chair'] },
-  { file: 'chairModernCushion.glb', keywords: ['armchair', 'chair'] },
-  { file: 'rugRectangle.glb', keywords: ['rug'] },
-  { file: 'bookcaseOpen.glb', keywords: ['bookshelf', 'bookcase', 'shelf'] },
-  { file: 'cabinetTelevision.glb', keywords: ['sideboard', 'cabinet', 'console'] },
-  { file: 'pottedPlant.glb', keywords: ['plant', 'vase', 'flower'] },
+  {
+    file: 'lampSquareCeiling.glb',
+    keywords: ['pendant light', 'pendant', 'ceiling lamp', 'chandelier'],
+  },
+  { file: 'loungeSofa.glb', keywords: ['sofa', 'couch', 'loveseat', 'sectional'] },
+  {
+    file: 'loungeDesignChair.glb',
+    keywords: ['accent chair', 'lounge chair', 'ottoman', 'bench'],
+  },
+  {
+    file: 'chairModernCushion.glb',
+    keywords: ['armchair', 'chair', 'seat', 'stool'],
+  },
+  { file: 'rugRectangle.glb', keywords: ['rug', 'carpet', 'runner', 'mat'] },
+  {
+    file: 'bookcaseOpen.glb',
+    keywords: ['bookshelf', 'bookcase', 'shelf', 'shelving'],
+  },
+  {
+    file: 'cabinetTelevision.glb',
+    keywords: ['sideboard', 'cabinet', 'console', 'dresser', 'tv stand'],
+  },
+  { file: 'pottedPlant.glb', keywords: ['plant', 'vase', 'flower', 'tree'] },
   { file: 'bathroomMirror.glb', keywords: ['mirror'] },
-  { file: 'books.glb', keywords: ['books', 'art'] },
+  { file: 'books.glb', keywords: ['books', 'art', 'decor', 'sculpture'] },
 ]
 
 function hashSource(source: string): string {

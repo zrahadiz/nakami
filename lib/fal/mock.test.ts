@@ -75,6 +75,13 @@ describe('resolveMockSampleFile', () => {
     expect(resolveMockSampleFile('fiddle leaf plant')).toBe('pottedPlant.glb')
   })
 
+  test('maps common product names to matching furniture samples', () => {
+    expect(resolveMockSampleFile('Handwoven Wool Area Rug')).toBe('rugRectangle.glb')
+    expect(resolveMockSampleFile('Tan Leather Accent Chair')).toBe('loungeDesignChair.glb')
+    expect(resolveMockSampleFile('Modern Sectional Sofa')).toBe('loungeSofa.glb')
+    expect(resolveMockSampleFile('Upholstered Ottoman')).toBe('loungeDesignChair.glb')
+  })
+
   test('normalizes URL-encoded image sources (+ / %20 stand in for spaces)', () => {
     // A "table lamp" must not resolve to the table sample just because the
     // placeholder URL spells its name with '+' separators.

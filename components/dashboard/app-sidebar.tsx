@@ -10,6 +10,7 @@ import {
   LogOut,
   Monitor,
   Plus,
+  ReceiptText,
   Settings,
   ShoppingBag,
 } from "lucide-react";
@@ -35,9 +36,10 @@ import { getThreads } from "@/lib/api/threads";
 import type { Thread } from "@/lib/api/threads";
 
 const mainNav = [
-  { label: "My Boards", icon: LayoutGrid },
-  { label: "Saved Items", icon: Bookmark },
-  { label: "Bundles", icon: ShoppingBag },
+  { label: "My Boards", icon: LayoutGrid, href: null },
+  { label: "Orders", icon: ReceiptText, href: "/orders" },
+  { label: "Saved Items", icon: Bookmark, href: null },
+  { label: "Bundles", icon: ShoppingBag, href: null },
 ];
 
 const inspiration = [
@@ -181,15 +183,22 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {mainNav.map(({ label, icon: Icon }) => (
+              {mainNav.map(({ label, icon: Icon, href }) => (
                 <SidebarMenuItem key={label}>
-                  <SidebarMenuButton disabled className={rowClass}>
+                  <SidebarMenuButton
+                    isActive={href ? pathname === href : undefined}
+                    onClick={href ? () => go(href) : undefined}
+                    disabled={!href}
+                    className={rowClass}
+                  >
                     <Icon className="size-4.5" />
                     <span>{label}</span>
                   </SidebarMenuButton>
-                  <SidebarMenuBadge className={soonBadge}>
-                    Soon
-                  </SidebarMenuBadge>
+                  {!href && (
+                    <SidebarMenuBadge className={soonBadge}>
+                      Soon
+                    </SidebarMenuBadge>
+                  )}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
