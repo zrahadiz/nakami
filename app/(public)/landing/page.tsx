@@ -1,12 +1,7 @@
 // app/page.tsx
 import Navbar from "@/components/landing/navbar";
 import Hero from "@/components/landing/hero";
-import {
-  HowItWorks,
-  Features,
-  FinalCta,
-  Footer,
-} from "@/components/landing/sections";
+import { HowItWorks, Features, Footer } from "@/components/landing/sections";
 
 export default function LandingPage() {
   return (
@@ -16,7 +11,6 @@ export default function LandingPage() {
         <Hero />
         <HowItWorks />
         <Features />
-        <FinalCta />
       </main>
       <Footer />
     </div>

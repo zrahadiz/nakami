@@ -36,25 +36,13 @@ import { getThreads } from "@/lib/api/threads";
 import type { Thread } from "@/lib/api/threads";
 
 const mainNav = [
-  { label: "My Boards", icon: LayoutGrid, href: null },
+  { label: "Dashboards", icon: LayoutGrid, href: "/dashboard" },
   { label: "Orders", icon: ReceiptText, href: "/orders" },
-  { label: "Saved Items", icon: Bookmark, href: null },
-  { label: "Bundles", icon: ShoppingBag, href: null },
-];
-
-const inspiration = [
-  { label: "Living Spaces", icon: Armchair, color: "text-[#7A8B6F]" },
-  { label: "Gaming Setups", icon: Gamepad2, color: "text-[#8B6CFF]" },
-  {
-    label: "Home Office",
-    icon: Monitor,
-    color: "text-[#2F3E5C] dark:text-[#9AA8C9]",
-  },
 ];
 
 // Shared look for menu rows: roomy touch targets, rounded, persimmon marker when active.
 const rowClass =
-  "relative h-10 rounded-xl px-3 text-[14px] " +
+  "relative h-10 rounded-xl px-3 text-[14px] cursor-pointer " +
   "data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium " +
   "data-[active=true]:before:absolute data-[active=true]:before:-left-2 data-[active=true]:before:top-1/2 " +
   "data-[active=true]:before:h-5 data-[active=true]:before:w-[3px] data-[active=true]:before:-translate-y-1/2 " +
@@ -152,7 +140,7 @@ export function AppSidebar() {
         <button
           onClick={() => go("/dashboard")}
           aria-label="Nakami home"
-          className="flex items-center gap-2.5 rounded-xl text-left outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring/50"
+          className="flex items-center gap-2.5 rounded-xl text-left outline-none focus-visible:ring-2 focus-visible:ring-sidebar-ring/50 cursor-pointer"
         >
           <span className="relative grid size-9 shrink-0 place-items-center rounded-xl bg-[#1E1B18] dark:bg-[#F2EDE3]">
             <span className="font-(family-name:--font-display) text-lg font-medium leading-none text-[#F6F2EA] dark:text-[#1E1B18]">
@@ -167,14 +155,6 @@ export function AppSidebar() {
             </span>
             <span className="text-xs text-sidebar-foreground/40">中身</span>
           </span>
-        </button>
-
-        <button
-          onClick={() => go("/dashboard")}
-          className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#D9623B] text-[15px] font-medium text-white shadow-[0_8px_20px_-10px_rgba(217,98,59,0.9)] outline-none transition hover:bg-[#C4532D] focus-visible:ring-4 focus-visible:ring-[#D9623B]/30 active:scale-[0.99]"
-        >
-          <Plus className="size-4" />
-          New board
         </button>
       </SidebarHeader>
 
@@ -207,31 +187,6 @@ export function AppSidebar() {
 
         <SidebarSeparator className="mx-3 w-auto" />
 
-        {/* INSPIRATION */}
-        <SidebarGroup>
-          <SidebarGroupLabel className={groupLabelClass}>
-            Inspiration
-          </SidebarGroupLabel>
-
-          <SidebarGroupContent>
-            <SidebarMenu>
-              {inspiration.map(({ label, icon: Icon, color }) => (
-                <SidebarMenuItem key={label}>
-                  <SidebarMenuButton disabled className={rowClass}>
-                    <Icon className={`size-4.5 ${color}`} />
-                    <span>{label}</span>
-                  </SidebarMenuButton>
-                  <SidebarMenuBadge className={soonBadge}>
-                    Soon
-                  </SidebarMenuBadge>
-                </SidebarMenuItem>
-              ))}
-            </SidebarMenu>
-          </SidebarGroupContent>
-        </SidebarGroup>
-
-        <SidebarSeparator className="mx-3 w-auto" />
-
         {/* RECENT BOARDS */}
         <SidebarGroup>
           <div className="flex items-center justify-between pr-1">
@@ -243,7 +198,7 @@ export function AppSidebar() {
               aria-label="Start a new board"
               title="New board"
               onClick={() => go("/dashboard")}
-              className="grid size-7 place-items-center rounded-lg text-sidebar-foreground/50 outline-none transition hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring/50"
+              className="grid size-7 place-items-center rounded-lg text-sidebar-foreground/50 outline-none transition hover:bg-sidebar-accent hover:text-sidebar-foreground focus-visible:ring-2 focus-visible:ring-sidebar-ring/50 cursor-pointer"
             >
               <Plus className="size-4" />
             </button>
@@ -295,16 +250,6 @@ export function AppSidebar() {
 
       {/* FOOTER */}
       <SidebarFooter className="gap-2 border-t border-sidebar-border p-3">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton disabled className={rowClass}>
-              <Settings className="size-4.5" />
-              <span>Settings</span>
-            </SidebarMenuButton>
-            <SidebarMenuBadge className={soonBadge}>Soon</SidebarMenuBadge>
-          </SidebarMenuItem>
-        </SidebarMenu>
-
         <div className="flex items-center gap-3 rounded-xl bg-sidebar-accent/70 p-2.5">
           <span
             aria-hidden
