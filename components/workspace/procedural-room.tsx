@@ -109,7 +109,13 @@ export function ProceduralRoom({ preset }: { preset: RoomPreset }) {
               <planeGeometry args={[t.span, 0.1]} />
               <meshStandardMaterial color={BASEBOARD_COLOR} roughness={0.8} />
             </mesh>
-            {wall === windowWall && <WindowPane span={t.span} wallHeight={height} />}
+            {wall === windowWall && (
+              // WindowPane positions itself relative to the floor, so anchor the
+              // group on the wall's XZ only and let rotation follow the wall.
+              <group position={[t.position[0], 0, t.position[2]]} rotation-y={t.rotationY}>
+                <WindowPane span={t.span} wallHeight={height} />
+              </group>
+            )}
           </group>
         )
       })}

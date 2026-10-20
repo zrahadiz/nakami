@@ -99,6 +99,19 @@ export async function pollJob(handle: FalJobHandle): Promise<FalJobSnapshot> {
       requestId: handle.requestId,
     })
     const mapped = mapFalQueueStatus(status.status)
+    // fal reports failed runs as COMPLETED plus an `error` field, so check it
+    // before fetching the result.
+    const queueError = (status as { error?: unknown }).error
+
+    if (
+      mapped === 'failed' ||
+      (mapped === 'ready' && typeof queueError === 'string' && queueError)
+    ) {
+      return {
+        status: 'failed',
+        ...(typeof queueError === 'string' && queueError ? { error: queueError } : {}),
+      }
+    }
 
     if (mapped !== 'ready') {
       return { status: mapped }
