@@ -78,7 +78,11 @@ export interface MultiSellerOrderResult {
   internalOrderId: string
   paypalOrderId: string
   status: OrderStatus
-  /** Unique payee merchant ids — passed to the JS SDK (merchant-id param). */
+  /**
+   * Unique payee merchant ids actually used by this order. The JS SDK was
+   * loaded with exactly this set (merchant-id param); it validates by set
+   * equality, so extra or missing ids cause a payee mismatch error.
+   */
   merchantIds: string[]
 }
 

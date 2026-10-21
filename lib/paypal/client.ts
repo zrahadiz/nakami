@@ -27,11 +27,16 @@ export function isPayPalConfigured(): boolean {
   return Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_CLIENT_SECRET)
 }
 
+/** Which PayPal environment this deployment talks to. */
+export function getPayPalEnv(): PayPalEnv {
+  return process.env.PAYPAL_ENV === 'live' ? 'live' : 'sandbox'
+}
+
 export function getPayPalConfig(): PayPalConfig {
   const clientId = process.env.PAYPAL_CLIENT_ID
   const clientSecret = process.env.PAYPAL_CLIENT_SECRET
   if (!clientId || !clientSecret) throw new PayPalNotConfiguredError()
-  const env: PayPalEnv = process.env.PAYPAL_ENV === 'live' ? 'live' : 'sandbox'
+  const env = getPayPalEnv()
   return {
     env,
     base:

@@ -11,9 +11,14 @@ import { checkoutRequestSchema } from "@/lib/paypal/checkout-schema";
 
 // POST /api/checkout/merchants — resolve the seller merchant ids for a set of
 // items WITHOUT creating a PayPal order. The JS SDK needs the merchant list at
-// script-load time (official multi-merchant requirement: pass merchant-id /
-// data-merchant-id), i.e. before the buyer clicks a button, so the board
-// checkout panel resolves payees first and only then mounts the buttons.
+// script-load time (official multi-merchant requirement: merchant-id /
+// data-merchant-id), before the buyer clicks a button.
+//
+// The list must be EXACTLY this cart's payees, not the whole assignable pool:
+// the SDK validates the created order against merchant-id by set equality
+// (same length and same members), so an extra declared seller fails a
+// single-seller order. The checkout panel therefore remounts the provider with
+// a fresh namespace whenever this list changes.
 export async function POST(request: Request) {
     const supabase = await createClient();
 
@@ -48,7 +53,11 @@ export async function POST(request: Request) {
         // here will also pass when the buyer clicks the button.
         const items = prepareCheckoutItems(result.data.items);
         const payees = await resolvePayees(items);
-        const merchantIds = [...new Set([...payees.values()].map((payee) => payee.merchantId))];
+        // Sorted so the provider key/namespace is stable when only the cart
+        // order changes; the SDK compares the list as a set, not by position.
+        const merchantIds = [
+            ...new Set([...payees.values()].map((payee) => payee.merchantId)),
+        ].sort();
         return Response.json({ merchantIds });
     } catch (err) {
         if (err instanceof CheckoutValidationError) {

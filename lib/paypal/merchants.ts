@@ -2,13 +2,14 @@ import 'server-only'
 import { createServiceClient } from '@/lib/supabase/service'
 import type { CheckoutItemInput, Payee } from './types'
 import { UnresolvedMerchantError } from './errors'
+import { getPayPalEnv } from './client'
 import { pickRandomMerchant } from './merchant-pool'
 
 // "A PayPal sandbox merchant account for each product": paypal_merchants maps
 // a catalog product to the PayPal business account that receives its money.
-// Existing rows always win. A product seen for the first time gets a merchant
-// picked at random from scripts/paypal-merchants.json and that assignment is
-// persisted, so every later checkout pays the same account.
+// Existing rows always win. In sandbox, a product seen for the first time gets
+// a merchant picked at random from scripts/paypal-merchants.json and that
+// assignment is persisted, so every later checkout pays the same account.
 //
 // Service-role client (bypasses RLS): the mapping is server configuration and
 // deliberately has no user-facing policies.
@@ -56,11 +57,13 @@ export async function resolvePayees(
   const payees = new Map<string, Payee>()
   if (productIds.length === 0) return payees
 
+  const env = getPayPalEnv()
   const supabase = createServiceClient()
 
   const { data: exactRows, error: exactError } = await supabase
     .from('paypal_merchants')
     .select('product_id, payee_email, payee_merchant_id')
+    .eq('env', env)
     .in('product_id', productIds)
   if (exactError) throw exactError
 
@@ -71,7 +74,9 @@ export async function resolvePayees(
   if (missing.length > 0) {
     const itemByProduct = new Map(items.map((item) => [item.productId, item]))
     const assignments = missing.flatMap((productId) => {
-      const merchant = pickRandomMerchant()
+      // The JSON pool holds sandbox accounts, so it is only used in sandbox.
+      // Live relies on explicitly seeded rows or the platform default.
+      const merchant = env === 'sandbox' ? pickRandomMerchant() : null
       const item = itemByProduct.get(productId)
       if (!merchant || !item) return []
       return [
@@ -80,7 +85,7 @@ export async function resolvePayees(
           retailer: item.retailer,
           payee_email: merchant.payeeEmail,
           payee_merchant_id: merchant.payeeMerchantId,
-          env: 'sandbox',
+          env,
         },
       ]
     })
@@ -98,6 +103,7 @@ export async function resolvePayees(
       const { data: assignedRows, error: assignedError } = await supabase
         .from('paypal_merchants')
         .select('product_id, payee_email, payee_merchant_id')
+        .eq('env', env)
         .in('product_id', missing)
       if (assignedError) throw assignedError
       for (const row of assignedRows ?? []) byProduct.set(row.product_id, row)
@@ -117,7 +123,12 @@ export async function resolvePayees(
     const { data: retailerRows, error: retailerError } = await supabase
       .from('paypal_merchants')
       .select('product_id, payee_email, payee_merchant_id, retailer')
+      .eq('env', env)
       .in('retailer', retailers)
+      // Deterministic "first row per retailer" so the preflight merchants
+      // endpoint and order creation resolve the same fallback payee.
+      .order('created_at', { ascending: true })
+      .order('product_id', { ascending: true })
     if (retailerError) throw retailerError
     for (const row of (retailerRows ?? []) as Array<MerchantRow & { retailer: string }>) {
       // First mapping per retailer wins; per-product rows can refine it later.

@@ -26,6 +26,12 @@ export type CheckoutOrder = {
   internalOrderId: string
   /** The PayPal order id returned to the PayPal buttons. */
   paypalOrderId: string
+  /**
+   * Seller ids actually used by the order's purchase units. Must exactly equal
+   * the ids the SDK was loaded with; used to detect a stale script before
+   * PayPal's own payee validation does.
+   */
+  merchantIds: string[]
 }
 
 /* ---------- errors ---------- */
@@ -94,7 +100,9 @@ export async function getCheckoutConfig(
   }
 }
 
-// POST /api/checkout/merchants: the seller ids PayPal needs for these items.
+// POST /api/checkout/merchants: this cart's exact seller ids, which the PayPal
+// SDK must be loaded with (it validates the order by set equality). The
+// endpoint also validates the cart and persists first-time assignments.
 export async function getCheckoutMerchants(
   input: CheckoutRequest,
   signal?: AbortSignal

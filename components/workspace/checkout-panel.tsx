@@ -17,6 +17,11 @@ import {
   getCheckoutErrorMessage,
   getCheckoutMerchants,
 } from "@/lib/api/checkout";
+import {
+  merchantNamespace,
+  normalizeMerchantIds,
+  sameMerchantIds,
+} from "@/lib/paypal/merchant-ids";
 import type { CaptureResult, CheckoutItemInput } from "@/lib/paypal/types";
 import { money, type Product } from "@/types/workspaces";
 import {
@@ -27,7 +32,14 @@ import {
 type Config =
   | { state: "loading" }
   | { state: "unconfigured" }
-  | { state: "ready"; env: string; clientId: string; merchantIds: string[] }
+  | {
+      state: "ready";
+      env: string;
+      clientId: string;
+      merchantIds: string[];
+      /** The items snapshot these merchant ids were resolved for. */
+      itemsKey: string;
+    }
   | { state: "blocked"; message: string; productIds?: string[] };
 
 type Phase =
@@ -220,7 +232,10 @@ export function CheckoutPanel({
     let cancelled = false;
 
     setRefreshing(true);
-    // Keep an already-ready config on screen while it refreshes (no SDK reload flicker).
+    // Keep the previous ready config while refreshing. The panel treats a
+    // config whose itemsKey no longer matches the cart as stale and disables
+    // Pay; when the new merchant list arrives, the provider key/namespace
+    // changes and the SDK script is remounted.
     setConfig((prev) => (prev.state === "ready" ? prev : { state: "loading" }));
 
     (async () => {
@@ -244,6 +259,7 @@ export function CheckoutPanel({
           env: cfg.env ?? "sandbox",
           clientId: cfg.clientId,
           merchantIds,
+          itemsKey,
         });
       } catch (err) {
         if (cancelled) return;
@@ -347,14 +363,25 @@ export function CheckoutPanel({
 
   /* ---- ready: pay ---- */
 
-  const busy = phase.kind !== "idle" || refreshing;
+  // The SDK validates the order against the script's merchant-id list with
+  // set equality, so the list must be exactly this cart's payees. If the cart
+  // changed since those payees were resolved, treat the config as stale and
+  // disable Pay until the refresh lands.
+  const stale = config.itemsKey !== itemsKey;
+  const busy = phase.kind !== "idle" || refreshing || stale;
+
+  const sdkMerchantIds = config.merchantIds;
+  const sdkSortKey = normalizeMerchantIds(sdkMerchantIds).join(",");
+  // A namespace per merchant set lets a new SDK script load without colliding
+  // with the previous window.paypal (the SDK refuses to reuse a namespace).
+  const sdkNamespace = merchantNamespace(sdkMerchantIds);
 
   const status =
     phase.kind === "creating"
       ? "Creating your order…"
       : phase.kind === "awaiting"
         ? "Complete your payment in the PayPal window…"
-        : refreshing && phase.kind === "idle"
+        : (refreshing || stale) && phase.kind === "idle"
           ? "Updating your order…"
           : null;
 
@@ -420,13 +447,18 @@ export function CheckoutPanel({
         aria-busy={busy}
       >
         <PayPalScriptProvider
+          key={`${sdkNamespace}:${sdkSortKey}`}
           options={{
             clientId: config.clientId,
             currency: "USD",
             intent: "capture",
-            // Official multi-merchant requirement: pass the seller merchant
-            // ids (the lib sends them as data-merchant-id).
-            merchantId: config.merchantIds,
+            // Official multi-merchant requirement: pass this cart's exact
+            // seller ids (the lib sends them as merchant-id/data-merchant-id).
+            // Extra ids would fail the SDK's set-equality order validation.
+            merchantId: sdkMerchantIds,
+            // Unique per merchant set: remounting for a new cart must not try
+            // to load a second SDK into the same window.paypal namespace.
+            dataNamespace: sdkNamespace,
           }}
         >
           <PayPalGate>
@@ -439,8 +471,21 @@ export function CheckoutPanel({
                 try {
                   const order = await createCheckoutOrder({
                     threadId,
-                    items: JSON.parse(itemsKey),
+                    // Use the snapshot the SDK merchant list was resolved for,
+                    // not a possibly-newer cart. `stale` keeps the buttons
+                    // disabled while the two are out of sync.
+                    items: JSON.parse(config.itemsKey),
                   });
+                  // The SDK compares the order's payees to the loaded list by
+                  // set equality. If they diverged (e.g. a seed changed a
+                  // mapping), refresh config so the provider remounts with a
+                  // fresh script instead of letting PayPal reject the order.
+                  if (!sameMerchantIds(order.merchantIds, sdkMerchantIds)) {
+                    setRetryKey((k) => k + 1);
+                    throw new CheckoutApiError(
+                      "Checkout was updated. Please try again.",
+                    );
+                  }
                   internalOrderIdRef.current = order.internalOrderId;
                   setPhase({ kind: "awaiting" });
                   return order.paypalOrderId;
