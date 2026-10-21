@@ -17,6 +17,7 @@ export function OrderSummary({
   threadId,
   onPaid,
   onPaymentDone,
+  hasSelection,
 }: {
   /** The selected products (or the whole board when nothing is selected). */
   products: Product[];
@@ -27,6 +28,8 @@ export function OrderSummary({
   onPaid: () => void;
   /** After a fully successful payment, when the user chooses "Stay in workspace". */
   onPaymentDone?: () => void;
+  /** True when the user has selected products (false = the summary covers the whole board). */
+  hasSelection: boolean;
 }) {
   // Product ids the user chose to buy again (this panel session only).
   const [rebuy, setRebuy] = useState<Set<string>>(new Set());
@@ -47,12 +50,30 @@ export function OrderSummary({
       return next;
     });
 
+  // Group the payable items by retailer.
   const byRetailer = new Map<string, Product[]>();
   for (const p of toPay) {
     byRetailer.set(p.retailer, [...(byRetailer.get(p.retailer) ?? []), p]);
   }
 
   const payingProducts = frozen ?? toPay;
+
+  // What to say when there is nothing to pay, so it matches the real situation.
+  const emptyNotice =
+    products.length === 0
+      ? {
+          title: "Your board is empty",
+          body: "Add products to your board, then come back to check out.",
+        }
+      : hasSelection
+        ? {
+            title: "You’ve already bought everything you selected",
+            body: "Want another copy? Choose “Buy again” on an item above.",
+          }
+        : {
+            title: "Everything on your board is already purchased",
+            body: "Want another copy? Choose “Buy again” on an item above.",
+          };
 
   return (
     <div className="space-y-5">
@@ -68,7 +89,7 @@ export function OrderSummary({
               <li key={retailer}>
                 <div className="flex items-center justify-between gap-4 text-sm font-medium">
                   <span>{retailer}</span>
-                  <span className="font-(family-name:--font-mono)">
+                  <span className="font-[family-name:var(--font-mono)]">
                     {money(items.reduce((sum, p) => sum + p.price, 0))}
                   </span>
                 </div>
@@ -87,7 +108,7 @@ export function OrderSummary({
                           </span>
                         ) : null}
                       </span>
-                      <span className="shrink-0 font-(family-name:--font-mono)">
+                      <span className="shrink-0 font-[family-name:var(--font-mono)]">
                         {money(p.price)}
                       </span>
                     </li>
@@ -163,12 +184,9 @@ export function OrderSummary({
         <div className="flex items-start gap-3 rounded-2xl border border-border bg-muted/50 p-4">
           <Info className="mt-0.5 size-4 shrink-0 text-muted-foreground" />
           <div>
-            <p className="text-sm font-medium">
-              You&apos;ve already bought everything selected
-            </p>
+            <p className="text-sm font-medium">{emptyNotice.title}</p>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              Want another copy? Choose &ldquo;Buy again&rdquo; on an item
-              above.
+              {emptyNotice.body}
             </p>
           </div>
         </div>

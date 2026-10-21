@@ -547,6 +547,7 @@ export function BoardPanel({
                   purchasedIds={purchasedIds}
                   threadId={threadId}
                   onPaid={onPaid}
+                  hasSelection={selected.size > 0}
                   onPaymentDone={() => {
                     onClearSelection();
                     setSummaryOpen(false);
