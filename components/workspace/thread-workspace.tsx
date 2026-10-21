@@ -1,7 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  useQueryClient,
+  QueryClient,
+  QueryClientProvider,
+} from "@tanstack/react-query";
 import { fetchServerSentEvents, useChat } from "@tanstack/ai-react";
 import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -19,6 +23,11 @@ import { BoardPanel } from "./board-panel";
 import { ChatPanel } from "./chat-panel";
 import { PreviewTab, type PreviewItem } from "./preview-tab";
 import { useJobs, type GenerateItem } from "@/lib/workspace/use-jobs";
+import {
+  ordersQueryKey,
+  usePurchasedProducts,
+} from "@/lib/workspace/use-purchased";
+
 import {
   emptyBoard,
   swapTo,
@@ -97,10 +106,14 @@ function BackLink({
 function readStoredSelection(threadId: string): Set<string> {
   if (typeof window === "undefined") return new Set();
   try {
-    const raw = window.localStorage.getItem(`nakami:scene-selection:${threadId}`);
+    const raw = window.localStorage.getItem(
+      `nakami:scene-selection:${threadId}`,
+    );
     const slots: unknown = raw === null ? null : JSON.parse(raw);
     if (!Array.isArray(slots)) return new Set();
-    return new Set(slots.filter((slot): slot is string => typeof slot === "string"));
+    return new Set(
+      slots.filter((slot): slot is string => typeof slot === "string"),
+    );
   } catch {
     return new Set();
   }
@@ -126,10 +139,13 @@ function WorkspaceInner({
   threadId,
   firstPrompt,
   initialPreviewUrl = null,
-  isNewThread = false,
 }: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
+  const { purchasedIds } = usePurchasedProducts();
+  const handlePaid = () =>
+    void queryClient.invalidateQueries({ queryKey: ordersQueryKey });
 
   const [board, setBoard] = useState<Board>(emptyBoard);
   const [category, setCategory] = useState<Category>("furniture");
@@ -168,9 +184,6 @@ function WorkspaceInner({
     messagesRef.current = messages;
   }, [board, category, messages]);
 
-  // The board selection defines the 3D scene, so it survives reloads: every
-  // change is mirrored to localStorage (hydrated by readStoredSelection above;
-  // the page keys this component by thread id, so it re-runs per thread).
   useEffect(() => {
     try {
       window.localStorage.setItem(
@@ -181,7 +194,7 @@ function WorkspaceInner({
       /* storage unavailable — the selection just won't survive a reload */
     }
   }, [selected, threadId]);
-  /** Set the tab and mirror it into the URL without a server round-trip. */
+
   function setTab(next: Tab) {
     setTabState(next);
     window.history.replaceState(
@@ -234,7 +247,6 @@ function WorkspaceInner({
 
     const prompt = firstPrompt?.trim() || stored;
     if (prompt) send(prompt);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isHydrating]);
 
   // Record how long each run took ("Worked for 29s").
@@ -283,19 +295,8 @@ function WorkspaceInner({
     setBoard(mergeBoard(prev, latestPlan.board));
   }, [latestPlan]);
 
-  /* Preview scene (T10) */
-
-  // The agent's persisted build_scene_layout result supplies the room it chose
-  // (type, window wall, notes). Its placements are NOT reused: a refinement run
-  // can change the products without re-running the tool, so a stale layout
-  // would render the agent's original picks.
   const agentLayout = useMemo(() => readLatestSceneLayout(loose), [loose]);
 
-  // Scene membership: the products currently selected on the Products tab —
-  // "select items to place them together in 3D". Changing the selection
-  // changes the scene; unselected products stay out even if they were
-  // generated before (their jobs/cached models just make re-placing instant).
-  // The selection persists in localStorage so a reload restores the scene.
   const sceneProducts = useMemo(
     () => board.products.filter((p) => selected.has(p.slot)),
     [board.products, selected],
@@ -311,8 +312,6 @@ function WorkspaceInner({
         sceneProducts.map((p) => ({ productId: p.id, title: p.name })),
       ),
     });
-    // sceneProducts is rebuilt whenever the board or the jobs change, so
-    // identity is the right dependency.
   }, [sceneProducts, agentLayout]);
 
   const productById = useMemo(
@@ -362,7 +361,6 @@ function WorkspaceInner({
   const clearSelection = () => setSelected(new Set());
 
   /* 3D generation */
-
   /** Queue jobs for the given board slots (or for everything on the board). */
   async function handleGenerate(slots?: string[]) {
     const wanted = slots ? new Set(slots) : null;
@@ -408,7 +406,6 @@ function WorkspaceInner({
   }
 
   /* Board actions (local; locked items are sent to the agent on the next message) */
-
   function updateProducts(
     fn: (products: Board["products"]) => Board["products"],
   ) {
@@ -663,6 +660,8 @@ function WorkspaceInner({
                     threadId={threadId}
                     running={isLoading}
                     selected={selectedSlots}
+                    purchasedIds={purchasedIds}
+                    onPaid={handlePaid}
                     jobs={byProduct}
                     generating={generating}
                     generateError={generateError}
@@ -717,6 +716,8 @@ function WorkspaceInner({
             threadId={threadId}
             running={isLoading}
             selected={selectedSlots}
+            purchasedIds={purchasedIds}
+            onPaid={handlePaid}
             jobs={byProduct}
             generating={generating}
             generateError={generateError}

@@ -2,20 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  ArrowRight,
-  Loader2,
-  ReceiptText,
-  RotateCw,
-} from "lucide-react";
+import { ArrowRight, Loader2, ReceiptText, RotateCw } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getOrders } from "@/lib/api/orders";
 import type { Transaction, TransactionItem } from "@/lib/paypal/types";
@@ -68,7 +58,7 @@ const captureMeta: Record<
   { label: string; className: string }
 > = {
   COMPLETED: {
-    label: "Captured",
+    label: "Completed",
     className:
       "border-[#5C6B52]/25 bg-[#5C6B52]/10 text-[#3F4B38] dark:text-[#B9C8AD]",
   },
@@ -92,13 +82,19 @@ const captureMeta: Record<
   },
 };
 
-function CaptureBadge({ status }: { status: TransactionItem["captureStatus"] }) {
+function CaptureBadge({
+  status,
+}: {
+  status: TransactionItem["captureStatus"];
+}) {
   const meta = status ? captureMeta[status] : null;
 
   return (
     <Badge
       variant="outline"
-      className={meta?.className ?? "border-border bg-muted text-muted-foreground"}
+      className={
+        meta?.className ?? "border-border bg-muted text-muted-foreground"
+      }
     >
       {meta?.label ?? "Awaiting capture"}
     </Badge>

@@ -17,6 +17,7 @@ import {
 import type { Job } from "@/lib/workspace/use-jobs";
 import { money, total, type Board, type Product } from "@/types/workspaces";
 import { CheckoutPanel } from "./checkout-panel";
+import { OrderSummary } from "./order-summary";
 
 /* ---------- small pieces ---------- */
 
@@ -55,6 +56,7 @@ function ProductCard({
   product,
   index,
   selected,
+  purchased,
   job,
   dimmed,
   onToggleSelect,
@@ -65,6 +67,7 @@ function ProductCard({
   product: Product;
   index: number;
   selected: boolean;
+  purchased: boolean;
   job?: Job;
   dimmed: boolean;
   onToggleSelect: (slot: string) => void;
@@ -111,7 +114,6 @@ function ProductCard({
             className="absolute inset-0 m-auto size-9 text-black/25"
           />
         )}
-
         <button
           type="button"
           role="checkbox"
@@ -126,30 +128,37 @@ function ProductCard({
         >
           <Check className="size-3.5" strokeWidth={3} />
         </button>
-
         <span className="absolute right-3 top-3 max-w-[60%] truncate rounded-full bg-black/55 px-2.5 py-1 text-[11px] text-white backdrop-blur">
           {product.slot}
         </span>
-
         <JobChip job={job} />
       </div>
 
       {/* info */}
       <div className="flex flex-1 flex-col p-4">
-        <h3 className="line-clamp-2 text-[15px] font-medium leading-snug">
-          {product.url ? (
-            <a
-              href={product.url}
-              target="_blank"
-              rel="noreferrer"
-              className="outline-none hover:underline focus-visible:underline"
-            >
-              {product.name}
-            </a>
-          ) : (
-            product.name
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="line-clamp-2 text-[15px] font-medium leading-snug">
+            {product.url ? (
+              <a
+                href={product.url}
+                target="_blank"
+                rel="noreferrer"
+                className="outline-none hover:underline focus-visible:underline"
+              >
+                {product.name}
+              </a>
+            ) : (
+              product.name
+            )}
+          </h3>
+
+          {purchased && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-[#5C6B52]/15 px-2 py-0.5 text-[11px] font-medium text-[#3F4B38]">
+              <Check className="size-3" strokeWidth={3} />
+              Purchased
+            </span>
           )}
-        </h3>
+        </div>
 
         <div className="mt-2 flex items-center justify-between gap-2">
           <span className="truncate rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
@@ -308,6 +317,7 @@ export function BoardPanel({
   threadId,
   running,
   selected,
+  purchasedIds,
   jobs,
   generating,
   generateError,
@@ -320,16 +330,16 @@ export function BoardPanel({
   onSwap,
   onToggleLock,
   onRemove,
+  onPaid,
 }: {
   board: Board;
-  /** Checkout orders are anchored to the thread for the order history. */
   threadId: string | null;
   running: boolean;
   selected: Set<string>;
+  purchasedIds: Set<string>;
   jobs: Map<string, Job>;
   generating: boolean;
   generateError: string | null;
-  /** Pinned 3D scene preview, shown in the corner (opened via onOpenPreview). */
   pinnedPreviewUrl: string | null;
   onOpenPreview: () => void;
   onToggleSelect: (slot: string) => void;
@@ -339,6 +349,7 @@ export function BoardPanel({
   onSwap: (slot: string, altId: string) => void;
   onToggleLock: (slot: string) => void;
   onRemove: (slot: string) => void;
+  onPaid: () => void;
 }) {
   const [summaryOpen, setSummaryOpen] = useState(false);
 
@@ -468,6 +479,7 @@ export function BoardPanel({
                       product={product}
                       index={index}
                       selected={selected.has(product.slot)}
+                      purchased={purchasedIds.has(product.id)}
                       job={jobs.get(product.id)}
                       dimmed={running && !product.locked}
                       onToggleSelect={onToggleSelect}
@@ -529,43 +541,17 @@ export function BoardPanel({
         <footer className="shrink-0 border-t border-border bg-card/95 backdrop-blur">
           {summaryOpen && (
             <div className="border-b border-border">
-              {/* max height keeps a long list from pushing the products off screen */}
-              <div className="mx-auto max-h-[40vh] max-w-5xl overflow-y-auto px-4 py-4 sm:px-6 lg:px-8">
-                <p className="mb-3 text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                  {selected.size > 0 ? "Selected items" : "All items"}
-                </p>
-
-                <ul className="space-y-4">
-                  {[...byRetailer.entries()].map(([retailer, info]) => (
-                    <li key={retailer}>
-                      <div className="flex items-center justify-between gap-4 text-sm font-medium">
-                        <span>{retailer}</span>
-                        <span className="font-(family-name:--font-mono)">
-                          {money(info.subtotal)}
-                        </span>
-                      </div>
-
-                      <ul className="mt-1.5 space-y-1 border-l-2 border-border pl-3">
-                        {info.items.map((p) => (
-                          <li
-                            key={p.slot}
-                            className="flex items-start justify-between gap-4 text-sm text-muted-foreground"
-                          >
-                            <span className="min-w-0 truncate">{p.name}</span>
-                            <span className="shrink-0 font-(family-name:--font-mono)">
-                              {money(p.price)}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </li>
-                  ))}
-                </ul>
-
-                {/* Real PayPal multi-seller checkout (one purchase unit per
-                    product; the selected items — or all of them — are what
-                    the footer total shows). */}
-                <CheckoutPanel products={summaryProducts} threadId={threadId} />
+              <div className="mx-auto max-h-[50vh] max-w-5xl overflow-y-auto px-4 py-4 sm:px-6 lg:px-8">
+                <OrderSummary
+                  products={summaryProducts}
+                  purchasedIds={purchasedIds}
+                  threadId={threadId}
+                  onPaid={onPaid}
+                  onPaymentDone={() => {
+                    onClearSelection();
+                    setSummaryOpen(false);
+                  }}
+                />
               </div>
             </div>
           )}
