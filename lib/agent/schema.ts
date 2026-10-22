@@ -6,6 +6,10 @@ import { z } from 'zod'
 export const AgentPlanSchema = z.object({
   summary: z.string().describe('1-2 sentence description of the plan'),
   searchQuery: z.string().describe('the product search query the plan is based on'),
+  category: z
+    .enum(['furniture', 'gaming'])
+    .optional()
+    .describe('the board category this plan belongs to'),
   productIds: z.array(z.string()).describe('IDs of the products in the plan'),
   dimensions: z
     .object({

@@ -295,6 +295,7 @@ export type Database = {
       }
       threads: {
         Row: {
+          category: string
           created_at: string
           first_prompt: string | null
           id: string
@@ -304,6 +305,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          category?: string
           created_at?: string
           first_prompt?: string | null
           id?: string
@@ -313,6 +315,7 @@ export type Database = {
           user_id?: string
         }
         Update: {
+          category?: string
           created_at?: string
           first_prompt?: string | null
           id?: string

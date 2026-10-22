@@ -31,7 +31,7 @@ async function ThreadContent({ params }: { params: Promise<{ id: string }> }) {
   // RLS scopes the query to the signed-in user, so someone else's thread is a 404.
   const { data: thread, error } = await supabase
     .from("threads")
-    .select("id, first_prompt, preview_image_url")
+    .select("id, first_prompt, category, preview_image_url")
     .eq("id", id)
     .maybeSingle();
   if (error) {
@@ -47,6 +47,7 @@ async function ThreadContent({ params }: { params: Promise<{ id: string }> }) {
         key={id}
         threadId={id}
         firstPrompt={thread.first_prompt}
+        initialCategory={thread.category === "gaming" ? "gaming" : "furniture"}
         initialPreviewUrl={thread.preview_image_url}
       />
     </div>

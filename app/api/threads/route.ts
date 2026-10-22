@@ -6,6 +6,7 @@ import z from "zod";
 const postThreadSchema = z.object({
     name: z.string().trim().min(1),
     firstPrompt: z.string().trim().min(1),
+    category: z.enum(["furniture", "gaming"]).default("furniture"),
 });
 
 // GET /api/threads — all threads for the authenticated user, newest first.
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
         return Response.json({ error: result.error.message }, { status: 400 });
     }
 
-    const { name, firstPrompt } = result.data;
+    const { name, firstPrompt, category } = result.data;
 
     const { data: row, error } = await supabase
         .from("threads")
@@ -66,6 +67,7 @@ export async function POST(request: Request) {
             user_id: user.id,
             name: name,
             first_prompt: firstPrompt,
+            category,
         })
         .select()
         .single();

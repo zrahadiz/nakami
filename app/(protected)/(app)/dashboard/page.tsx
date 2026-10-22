@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import {
@@ -24,6 +24,29 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Continue the prompt a visitor typed on the landing page before signing up.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("nakami:pending-shopping-intent");
+      if (!raw) return;
+
+      sessionStorage.removeItem("nakami:pending-shopping-intent");
+      const intent = JSON.parse(raw) as {
+        prompt?: unknown;
+        category?: unknown;
+      };
+      if (typeof intent.prompt === "string" && intent.prompt.trim()) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setPrompt(intent.prompt);
+      }
+      if (intent.category === "furniture" || intent.category === "gaming") {
+        setCategory(intent.category);
+      }
+    } catch {
+      /* storage unavailable or malformed — start with a blank board */
+    }
+  }, []);
+
   async function handleSubmit(data: PromptSubmitData) {
     const value = data.prompt.trim();
 
@@ -33,7 +56,11 @@ export default function Dashboard() {
     setError(null);
 
     try {
-      const thread = await createThread(value.slice(0, 60), value);
+      const thread = await createThread(
+        value.slice(0, 60),
+        value,
+        data.category,
+      );
 
       sessionStorage.setItem(`nakami:pending-prompt:${thread.id}`, value);
 

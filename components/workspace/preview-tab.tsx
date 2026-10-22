@@ -318,7 +318,6 @@ function SceneGeneratingOverlay({
     (item) => item.job && item.job.status !== "failed",
   );
   const failed = pending.filter((item) => item.job?.status === "failed");
-  const started = items.some((item) => item.job);
 
   const allReady = items.every(
     (item) => item.job && item.job.status === 'ready',

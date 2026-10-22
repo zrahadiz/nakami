@@ -2,18 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  Armchair,
-  Bookmark,
-  Gamepad2,
-  LayoutGrid,
-  LogOut,
-  Monitor,
-  Plus,
-  ReceiptText,
-  Settings,
-  ShoppingBag,
-} from "lucide-react";
+import { LayoutGrid, LogOut, Plus, ReceiptText } from "lucide-react";
 
 import {
   Sidebar,

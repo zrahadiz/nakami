@@ -197,7 +197,6 @@ export function CheckoutPanel({
   const router = useRouter();
 
   const [config, setConfig] = useState<Config>({ state: "loading" });
-  const [refreshing, setRefreshing] = useState(false);
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const [error, setError] = useState<string | null>(null);
   const [retryKey, setRetryKey] = useState(0);
@@ -231,13 +230,10 @@ export function CheckoutPanel({
     const controller = new AbortController();
     let cancelled = false;
 
-    setRefreshing(true);
-    // Keep the previous ready config while refreshing. The panel treats a
-    // config whose itemsKey no longer matches the cart as stale and disables
-    // Pay; when the new merchant list arrives, the provider key/namespace
-    // changes and the SDK script is remounted.
-    setConfig((prev) => (prev.state === "ready" ? prev : { state: "loading" }));
-
+    // Leave the previous config in place while this fetch runs. The panel
+    // treats a config whose itemsKey no longer matches the cart as stale and
+    // disables Pay; when the new merchant list arrives, the provider
+    // key/namespace changes and the SDK script is remounted.
     (async () => {
       try {
         const cfg = await getCheckoutConfig(controller.signal);
@@ -269,8 +265,6 @@ export function CheckoutPanel({
           message: apiError?.message ?? "Checkout is unavailable.",
           productIds: apiError?.productIds,
         });
-      } finally {
-        if (!cancelled) setRefreshing(false);
       }
     })();
 
@@ -368,7 +362,7 @@ export function CheckoutPanel({
   // changed since those payees were resolved, treat the config as stale and
   // disable Pay until the refresh lands.
   const stale = config.itemsKey !== itemsKey;
-  const busy = phase.kind !== "idle" || refreshing || stale;
+  const busy = phase.kind !== "idle" || stale;
 
   const sdkMerchantIds = config.merchantIds;
   const sdkSortKey = normalizeMerchantIds(sdkMerchantIds).join(",");
@@ -381,7 +375,7 @@ export function CheckoutPanel({
       ? "Creating your order…"
       : phase.kind === "awaiting"
         ? "Complete your payment in the PayPal window…"
-        : (refreshing || stale) && phase.kind === "idle"
+        : stale && phase.kind === "idle"
           ? "Updating your order…"
           : null;
 
@@ -395,11 +389,15 @@ export function CheckoutPanel({
   const dialogStatus: PaymentDialogStatus =
     phase.kind === "capturing"
       ? "capturing"
-      : result?.status === "completed"
-        ? "completed"
-        : result?.status === "partially_completed"
-          ? "partial"
-          : "failed";
+      : result?.processing ||
+          result?.status === "created" ||
+          result?.status === "approved"
+        ? "pending"
+        : result?.status === "completed"
+          ? "completed"
+          : result?.status === "partially_completed"
+            ? "partial"
+            : "failed";
 
   /** "Stay in workspace", or closing the dialog (✕ / Esc / outside click). */
   function dismissDialog() {
@@ -417,6 +415,26 @@ export function CheckoutPanel({
     setPhase({ kind: "idle" });
     setError(null);
     onReset?.();
+  }
+
+  /** Re-poll the same PayPal order; never create a second order for a pending capture. */
+  async function checkAgain() {
+    const orderId = internalOrderIdRef.current;
+    if (!orderId) {
+      setPhase({ kind: "idle" });
+      setError("Missing order reference. Open the order from your history.");
+      return;
+    }
+
+    setPhase({ kind: "capturing" });
+    try {
+      const captured = await captureOrderWithRetries(orderId);
+      setPhase({ kind: "done", result: captured, total });
+      onPaid?.();
+    } catch (err) {
+      setPhase({ kind: "idle" });
+      setError(getCheckoutErrorMessage(err, "Could not check the payment status."));
+    }
   }
 
   function goToOrders() {
@@ -481,6 +499,7 @@ export function CheckoutPanel({
                   // mapping), refresh config so the provider remounts with a
                   // fresh script instead of letting PayPal reject the order.
                   if (!sameMerchantIds(order.merchantIds, sdkMerchantIds)) {
+                    setConfig({ state: "loading" });
                     setRetryKey((k) => k + 1);
                     throw new CheckoutApiError(
                       "Checkout was updated. Please try again.",
@@ -572,6 +591,7 @@ export function CheckoutPanel({
         onStay={dismissDialog}
         onViewOrders={goToOrders}
         onRetry={retryPayment}
+        onCheckAgain={checkAgain}
       />
     </section>
   );

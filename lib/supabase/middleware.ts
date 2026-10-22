@@ -7,6 +7,7 @@ import type { Database } from "./database.types";
 // proxy is an optimistic check, not the authorization boundary.
 const PUBLIC_ROUTES = [
   "/",
+  "/landing",
   "/sign-in",
   "/register",
   "/auth/callback",

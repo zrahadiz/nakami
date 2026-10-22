@@ -68,7 +68,24 @@ export async function captureMultiSellerOrder(
     // resource instead of failing the checkout outright.
     const orderBody = await fetchPayPalOrder(order.paypal_order_id)
     if (orderBody) {
-      return persistCapture(supabase, order, orderBody)
+      const paypalStatus =
+        typeof orderBody.status === 'string' ? orderBody.status : 'CREATED'
+      const terminal =
+        paypalStatus === 'COMPLETED' ||
+        paypalStatus === 'PARTIALLY_COMPLETED' ||
+        paypalStatus === 'VOIDED'
+      if (terminal) {
+        return persistCapture(supabase, order, orderBody)
+      }
+      // The order exists but PayPal has not finalized the capture yet. Do not
+      // report 'failed' (which says "nothing was charged"); tell the client to
+      // keep polling/reconciling.
+      return {
+        internalOrderId: order.id,
+        status: orderStatusFromPayPal(paypalStatus),
+        items: [],
+        processing: true,
+      }
     }
     return {
       internalOrderId: order.id,

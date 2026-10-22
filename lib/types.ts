@@ -73,11 +73,15 @@ export interface DimensionEstimate {
 }
 
 // Thread
+export type ThreadCategory = "furniture" | "gaming";
+
 export interface Thread {
   id: string;
   userId: string;
   name: string;
   firstPrompt: string | null;
+  /** Shopping category chosen when the board was created. */
+  category: ThreadCategory;
   /** Pinned 3D preview capture (thread-thumbnails bucket), null until pinned. */
   previewImageUrl: string | null;
   createdAt: string; // ISO 8601

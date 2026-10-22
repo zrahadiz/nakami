@@ -24,6 +24,7 @@ import { money } from "@/types/workspaces";
 
 export type PaymentDialogStatus =
   | "capturing"
+  | "pending"
   | "completed"
   | "partial"
   | "failed";
@@ -43,6 +44,8 @@ type Props = {
   onViewOrders: () => void;
   /** Try again (partial or failed payments). */
   onRetry: () => void;
+  /** Re-poll the same order while PayPal is still processing. */
+  onCheckAgain?: () => void;
 };
 
 const tones = {
@@ -92,6 +95,7 @@ export function PaymentStatusDialog({
   onStay,
   onViewOrders,
   onRetry,
+  onCheckAgain,
 }: Props) {
   const noun = (n: number) => (n === 1 ? "item" : "items");
 
@@ -116,6 +120,24 @@ export function PaymentStatusDialog({
                 </DialogTitle>
                 <DialogDescription>
                   This only takes a moment. Please don&apos;t close this page.
+                </DialogDescription>
+              </div>
+            </>
+          )}
+
+          {status === "pending" && (
+            <>
+              <StatusMark tone="working">
+                <Loader2 className="size-7 animate-spin" />
+              </StatusMark>
+              <div className="space-y-1.5">
+                <DialogTitle className="font-(family-name:--font-display) text-2xl font-medium">
+                  Payment is still processing
+                </DialogTitle>
+                <DialogDescription>
+                  PayPal hasn&apos;t confirmed the final state yet. Don&apos;t
+                  pay again — check the status or come back to your orders in a
+                  moment.
                 </DialogDescription>
               </div>
             </>
@@ -182,6 +204,28 @@ export function PaymentStatusDialog({
             </>
           )}
         </DialogHeader>
+
+        {status === "pending" && (
+          <DialogFooter className="mt-2 gap-2 sm:justify-center">
+            <Button
+              variant="outline"
+              onClick={onStay}
+              className={secondaryButton}
+            >
+              Close
+            </Button>
+            {onCheckAgain && (
+              <Button onClick={onCheckAgain} className={primaryButton}>
+                <RotateCw className="size-4" />
+                Check again
+              </Button>
+            )}
+            <Button onClick={onViewOrders} className={primaryButton}>
+              Go to orders
+              <ArrowRight className="size-4" />
+            </Button>
+          </DialogFooter>
+        )}
 
         {status === "completed" && (
           <DialogFooter className="mt-2 gap-2 sm:justify-center">

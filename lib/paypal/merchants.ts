@@ -95,7 +95,10 @@ export async function resolvePayees(
       // ignoreDuplicates keeps whichever row landed first.
       const { error: assignError } = await supabase
         .from('paypal_merchants')
-        .upsert(assignments, { onConflict: 'product_id', ignoreDuplicates: true })
+        .upsert(assignments, {
+          onConflict: 'product_id,env',
+          ignoreDuplicates: true,
+        })
       if (assignError) throw assignError
 
       // Re-read so the response reflects the persisted assignment, even when

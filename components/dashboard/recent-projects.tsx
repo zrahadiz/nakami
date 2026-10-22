@@ -2,22 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import {
-  Armchair,
-  ArrowRight,
-  Gamepad2,
-  Loader2,
-  Plus,
-  RotateCw,
-  Search,
-} from "lucide-react";
+import { Armchair, ArrowRight, Gamepad2, RotateCw, Search } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { createThread, getThreads } from "@/lib/api/threads";
+import { getThreads } from "@/lib/api/threads";
 import type { Thread } from "@/lib/api/threads";
 
 const interiorPalettes = [
@@ -37,20 +26,16 @@ function hash(value: string) {
   return Math.abs(h);
 }
 
-// Heuristic until threads store a real category.
-const isGaming = (name: string) =>
-  /gam|rgb|battlestation|streamer|esports|pc setup/i.test(name);
-
 function Cover({
   id,
-  name,
+  category,
   previewUrl,
 }: {
   id: string;
-  name: string;
+  category: Thread["category"];
   previewUrl?: string | null;
 }) {
-  const gaming = isGaming(name);
+  const gaming = category === "gaming";
   const palettes = gaming ? gamingPalettes : interiorPalettes;
   const [a, b, c] = palettes[hash(id) % palettes.length];
   const Icon = gaming ? Gamepad2 : Armchair;
@@ -65,6 +50,7 @@ function Cover({
       }}
     >
       {previewUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={previewUrl}
           alt=""
@@ -97,11 +83,8 @@ function Cover({
 
 /* ---------- Component ---------- */
 export function RecentProjects() {
-  const router = useRouter();
-
   const [threads, setThreads] = useState<Thread[]>([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
   const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -138,22 +121,6 @@ export function RecentProjects() {
     setError(null);
     setLoading(true);
     setReloadKey((key) => key + 1);
-  }
-
-  async function handleNewProject() {
-    if (creating) return;
-
-    setCreating(true);
-
-    try {
-      const thread = await createThread("Untitled board");
-
-      router.push(`/workspace/${thread.id}`);
-    } catch {
-      setError("Failed to create board");
-    } finally {
-      setCreating(false);
-    }
   }
 
   const filteredThreads = threads.filter((thread) =>
@@ -224,7 +191,7 @@ export function RecentProjects() {
         {/* BOARD CARDS */}
         {!loading &&
           filteredThreads.map((thread) => {
-            const gaming = isGaming(thread.name);
+            const gaming = thread.category === "gaming";
 
             return (
               <Link
@@ -234,7 +201,7 @@ export function RecentProjects() {
               >
                 <Cover
                   id={String(thread.id)}
-                  name={thread.name}
+                  category={thread.category}
                   previewUrl={thread.previewImageUrl}
                 />
 

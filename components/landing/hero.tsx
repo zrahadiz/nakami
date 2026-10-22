@@ -39,7 +39,7 @@ export default function Hero() {
       }),
     );
 
-    router.push("/register?next=%2Fworkspace");
+    router.push("/register?next=%2Fdashboard");
   }
 
   return (

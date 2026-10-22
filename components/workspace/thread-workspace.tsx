@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   useQueryClient,
   QueryClient,
@@ -16,6 +16,7 @@ import {
   type LooseMessage,
 } from "@/lib/workspace/agent-plan";
 import { readLatestSceneLayout } from "@/lib/workspace/scene-plan";
+import { updateThreadCategory } from "@/lib/api/threads";
 import { buildSceneLayout } from "@/lib/scene/layout";
 import { estimateDimensionsFromTitles } from "@/lib/agent/dimensions";
 import type { SceneLayout } from "@/lib/scene/contract";
@@ -57,6 +58,7 @@ import { Badge } from "@/components/ui/badge";
 type Props = {
   threadId: string;
   firstPrompt?: string | null;
+  initialCategory?: Category;
   initialPreviewUrl?: string | null;
   isNewThread?: boolean;
 };
@@ -138,6 +140,7 @@ export function ThreadWorkspace(props: Props) {
 function WorkspaceInner({
   threadId,
   firstPrompt,
+  initialCategory = "furniture",
   initialPreviewUrl = null,
 }: Props) {
   const pathname = usePathname();
@@ -148,7 +151,7 @@ function WorkspaceInner({
     void queryClient.invalidateQueries({ queryKey: ordersQueryKey });
 
   const [board, setBoard] = useState<Board>(emptyBoard);
-  const [category, setCategory] = useState<Category>("furniture");
+  const [category, setCategory] = useState<Category>(initialCategory);
   const [tab, setTabState] = useState<Tab>(() =>
     parseTab(searchParams.get("tab")),
   );
@@ -172,7 +175,6 @@ function WorkspaceInner({
   const { byProduct, generate, generating, generateError } = useJobs(threadId);
 
   const boardRef = useRef(board);
-  const categoryRef = useRef(category);
   const messagesRef = useRef(messages);
   const startedRef = useRef(false);
   const runStartRef = useRef<number | null>(null);
@@ -180,9 +182,8 @@ function WorkspaceInner({
 
   useEffect(() => {
     boardRef.current = board;
-    categoryRef.current = category;
     messagesRef.current = messages;
-  }, [board, category, messages]);
+  }, [board, messages]);
 
   useEffect(() => {
     try {
@@ -204,11 +205,24 @@ function WorkspaceInner({
     );
   }
 
-  function send(text: string) {
-    const value = text.trim();
-    if (!value) return;
+  const send = useCallback(
+    (text: string) => {
+      const value = text.trim();
+      if (!value) return;
 
-    void sendMessage(value);
+      // Carry the current category into forwardedProps so /api/chat can tell
+      // the agent whether this is a furniture or gaming board.
+      void sendMessage(value, { body: { category } });
+    },
+    [sendMessage, category],
+  );
+
+  function handleCategoryChange(next: Category) {
+    setCategory(next);
+    // Persist for the next visit; a failed save should not block chatting.
+    void updateThreadCategory(threadId, next).catch((error) => {
+      console.error("Failed to save the board category:", error);
+    });
   }
 
   /* Derive chat + board from what the agent streams */
@@ -247,7 +261,7 @@ function WorkspaceInner({
 
     const prompt = firstPrompt?.trim() || stored;
     if (prompt) send(prompt);
-  }, [isHydrating]);
+  }, [isHydrating, firstPrompt, isLoading, messages.length, send, threadId]);
 
   // Record how long each run took ("Worked for 29s").
   useEffect(() => {
@@ -270,12 +284,6 @@ function WorkspaceInner({
       setWorkedFor((w) => ({ ...w, [lastAssistant.id]: seconds }));
     }
   }, [isLoading]);
-
-  useEffect(() => {
-    boardRef.current = board;
-    categoryRef.current = category;
-    messagesRef.current = messages;
-  }, [board, category, messages]);
 
   useEffect(() => {
     if (!latestPlan) return;
@@ -520,7 +528,7 @@ function WorkspaceInner({
                           : null
                       }
                       category={category}
-                      onCategoryChange={setCategory}
+                      onCategoryChange={handleCategoryChange}
                       onSend={send}
                       onStop={() => stop()}
                       onRetry={() => void reload()}
@@ -697,7 +705,7 @@ function WorkspaceInner({
               error ? "Something went wrong while building your board." : null
             }
             category={category}
-            onCategoryChange={setCategory}
+            onCategoryChange={handleCategoryChange}
             onSend={send}
             onStop={() => stop()}
             onRetry={() => void reload()}

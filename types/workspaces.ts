@@ -62,7 +62,10 @@ export const money = (value: number) =>
   new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    maximumFractionDigits: 0,
+    // Keep cents visible: PayPal charges the exact amount, so a $1,499.50
+    // total must not look like $1,500. Whole-dollar prices stay compact.
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
   }).format(value)
 
 /** Swap a product for one of its alternatives; the old item becomes an alternative. */

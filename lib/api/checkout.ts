@@ -156,14 +156,18 @@ export async function captureOrderWithRetries(
   orderId: string,
   { attempts = 3, delayMs = 2000 } = {}
 ): Promise<CaptureResult> {
+  let last: CaptureResult | null = null
+
   for (let attempt = 0; attempt < attempts; attempt++) {
-    const result = await captureCheckoutOrder(orderId)
-    if (!result.processing) return result
+    last = await captureCheckoutOrder(orderId)
+    if (!last.processing) return last
 
     await new Promise((resolve) => setTimeout(resolve, delayMs))
   }
 
-  throw new CheckoutApiError(
-    'PayPal is still processing the payment. Try again in a moment or check your order history.'
-  )
+  // Still processing: return the last known state so the UI can say "pending"
+  // instead of "failed" (which incorrectly implies nothing was charged).
+  if (last) return last
+
+  throw new CheckoutApiError('Capture did not run. Please try again.')
 }

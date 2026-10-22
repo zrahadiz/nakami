@@ -16,7 +16,6 @@ import {
 
 import type { Job } from "@/lib/workspace/use-jobs";
 import { money, total, type Board, type Product } from "@/types/workspaces";
-import { CheckoutPanel } from "./checkout-panel";
 import { OrderSummary } from "./order-summary";
 
 /* ---------- small pieces ---------- */
@@ -359,7 +358,12 @@ export function BoardPanel({
   const pct = budget ? Math.min(100, (sum / budget) * 100) : 100;
   const allSelected = products.length > 0 && selected.size === products.length;
 
-  const summaryProducts = products.filter((p) => selected.has(p.slot));
+  // Nothing selected means the order summary covers the whole board (the
+  // OrderSummary contract); selecting items narrows it to that selection.
+  const summaryProducts =
+    selected.size > 0
+      ? products.filter((p) => selected.has(p.slot))
+      : products;
   const summarySum = total(summaryProducts);
 
   const byRetailer = new Map<string, { subtotal: number; items: Product[] }>();

@@ -88,6 +88,15 @@ export function AuthForm({ mode }: AuthFormProps) {
 
   const strength = getStrength(password);
 
+  // Honor the `next` path added by middleware / the 401 interceptor. Only
+  // same-origin absolute paths are accepted.
+  function destination() {
+    if (typeof window === "undefined") return "/dashboard";
+    const next = new URLSearchParams(window.location.search).get("next");
+    if (next && next.startsWith("/") && !next.startsWith("//")) return next;
+    return "/dashboard";
+  }
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
@@ -104,11 +113,10 @@ export function AuthForm({ mode }: AuthFormProps) {
             // emailRedirectTo: `${window.location.origin}/auth/callback`,
           },
         });
-        console.log("signUp data:", data);
         if (error) throw error;
 
         if (data.session) {
-          router.replace("/dashboard");
+          router.replace(destination());
           router.refresh();
         } else {
           setMessage(
@@ -123,7 +131,7 @@ export function AuthForm({ mode }: AuthFormProps) {
 
         if (error) throw error;
 
-        router.replace("/dashboard");
+        router.replace(destination());
         router.refresh();
       }
     } catch (err) {

@@ -70,18 +70,23 @@ export function PromptComposer({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
+  const previewUrlRef = useRef<string | null>(null);
 
-  useEffect(() => {
-    if (!file) {
-      setPreviewUrl(null);
-      return;
-    }
+  // Object URLs are created in the event handlers, not an effect; this only
+  // releases the last one when the composer unmounts.
+  useEffect(
+    () => () => {
+      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    },
+    [],
+  );
 
-    const url = URL.createObjectURL(file);
+  function replacePreview(nextFile: File | null) {
+    if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+    const url = nextFile ? URL.createObjectURL(nextFile) : null;
+    previewUrlRef.current = url;
     setPreviewUrl(url);
-
-    return () => URL.revokeObjectURL(url);
-  }, [file]);
+  }
 
   function attachFile(selectedFile?: File | null) {
     if (!selectedFile) return;
@@ -98,11 +103,13 @@ export function PromptComposer({
       return;
     }
 
+    replacePreview(selectedFile);
     setFile(selectedFile);
   }
 
   function removeFile() {
     setFile(null);
+    replacePreview(null);
     setFileError(null);
 
     if (fileRef.current) {

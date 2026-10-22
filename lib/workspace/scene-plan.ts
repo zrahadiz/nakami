@@ -53,16 +53,6 @@ const IN_FLIGHT = new Set([
   'approval-responded',
 ])
 
-/** States that carry the output on the part itself. `complete` is TanStack
- *  AI's terminal ToolCallState; the rest are tolerated legacy spellings. */
-const TERMINAL = new Set([
-  'complete',
-  'output-complete',
-  'output-available',
-  'success',
-  'done',
-])
-
 /** Validate a payload into a SceneLayout, or reject it. */
 function toLayout(payload: unknown): SceneLayout | null {
   if (!isObj(payload)) return null
