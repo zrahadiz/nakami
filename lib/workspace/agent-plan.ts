@@ -23,15 +23,13 @@
 //     products?: [{                  // optional inline variant
 //       slot?: string,               // e.g. "Floor lamp" (falls back to the product name)
 //       name: string, retailer: string, price: number,
-//       imageUrl?: string, url?: string, color?: string,
-//       alternatives?: [{ name, retailer, price, imageUrl?, url? }]
+//       imageUrl?: string, url?: string, color?: string
 //     }],
 //     suggestions?: string[]         // follow-up chips
 //   }
 
 import type {
   Activity,
-  Alternative,
   Board,
   Category,
   Message,
@@ -93,7 +91,9 @@ function fallbackColor(seed: string) {
   return palette[Math.abs(h) % palette.length]
 }
 
-function toAlternative(raw: unknown, slot: string): Alternative | null {
+type ProductDetails = Omit<Product, 'slot' | 'locked'>
+
+function toProductDetails(raw: unknown, slot: string): ProductDetails | null {
   if (!isObj(raw)) return null
 
   const name = str(first(raw, ['name', 'title']))
@@ -185,7 +185,7 @@ function toBoard(
     let slot = str(first(raw, ['slot', 'type', 'role', 'category'])) ?? str(first(raw, ['name', 'title']))
     if (!slot) continue
 
-    const main = toAlternative(raw, slot)
+    const main = toProductDetails(raw, slot)
     if (!main) continue
 
     // Keep slot keys unique (two "Chair" entries etc.).
@@ -194,11 +194,7 @@ function toBoard(
     slot = unique
     seen.add(slot)
 
-    const alternatives = (Array.isArray(raw.alternatives) ? raw.alternatives : [])
-      .map((a) => toAlternative(a, slot))
-      .filter((a): a is Alternative => a !== null)
-
-    products.push({ ...main, slot, locked: false, alternatives })
+    products.push({ ...main, slot, locked: false })
   }
 
   return {
