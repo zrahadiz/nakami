@@ -31,7 +31,6 @@ import {
 
 import {
   emptyBoard,
-  swapTo,
   type Board,
   type Category,
 } from "@/types/workspaces";
@@ -420,11 +419,6 @@ function WorkspaceInner({
     setBoard((b) => ({ ...b, products: fn(b.products) }));
   }
 
-  const handleSwap = (slot: string, altId: string) =>
-    updateProducts((ps) =>
-      ps.map((p) => (p.slot === slot ? swapTo(p, altId) : p)),
-    );
-
   const handleToggleLock = (slot: string) =>
     updateProducts((ps) =>
       ps.map((p) => (p.slot === slot ? { ...p, locked: !p.locked } : p)),
@@ -679,7 +673,6 @@ function WorkspaceInner({
                     onSelectAll={selectAll}
                     onClearSelection={clearSelection}
                     onGenerate={handleGenerate}
-                    onSwap={handleSwap}
                     onToggleLock={handleToggleLock}
                     onRemove={handleRemove}
                   />
@@ -735,7 +728,6 @@ function WorkspaceInner({
             onSelectAll={selectAll}
             onClearSelection={clearSelection}
             onGenerate={handleGenerate}
-            onSwap={handleSwap}
             onToggleLock={handleToggleLock}
             onRemove={handleRemove}
           />

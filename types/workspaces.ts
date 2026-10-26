@@ -2,7 +2,7 @@
 
 export type Category = 'furniture' | 'gaming'
 
-export type Alternative = {
+export type Product = {
   id: string
   name: string
   retailer: string
@@ -11,13 +11,9 @@ export type Alternative = {
   color: string
   imageUrl?: string
   url?: string
-}
-
-export type Product = Alternative & {
   /** Stable slot key (e.g. "Floor lamp"). Used as the React key. */
   slot: string
   locked: boolean
-  alternatives: Alternative[]
 }
 
 export type Board = {
@@ -67,17 +63,3 @@ export const money = (value: number) =>
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(value)
-
-/** Swap a product for one of its alternatives; the old item becomes an alternative. */
-export function swapTo(product: Product, altId: string): Product {
-  const alt = product.alternatives.find((a) => a.id === altId)
-  if (!alt) return product
-
-  const { slot, locked, alternatives, ...current } = product
-  return {
-    ...alt,
-    slot,
-    locked,
-    alternatives: [current, ...alternatives.filter((a) => a.id !== altId)],
-  }
-}

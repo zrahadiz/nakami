@@ -9,7 +9,6 @@ import {
   Lock,
   LockOpen,
   Package,
-  Repeat2,
   Trash2,
   TriangleAlert,
 } from "lucide-react";
@@ -59,7 +58,6 @@ function ProductCard({
   job,
   dimmed,
   onToggleSelect,
-  onSwap,
   onToggleLock,
   onRemove,
 }: {
@@ -70,12 +68,10 @@ function ProductCard({
   job?: Job;
   dimmed: boolean;
   onToggleSelect: (slot: string) => void;
-  onSwap: (slot: string, altId: string) => void;
   onToggleLock: (slot: string) => void;
   onRemove: (slot: string) => void;
 }) {
   const [shown, setShown] = useState(false);
-  const [showAlts, setShowAlts] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setShown(true), 60 + index * 70);
@@ -188,22 +184,6 @@ function ProductCard({
 
           <button
             type="button"
-            onClick={() => setShowAlts((v) => !v)}
-            aria-expanded={showAlts}
-            disabled={product.alternatives.length === 0}
-            title={
-              product.alternatives.length === 0
-                ? "No alternatives yet"
-                : undefined
-            }
-            className="flex h-9 items-center gap-1.5 rounded-xl border border-border px-3 text-xs font-medium text-foreground/70 outline-none transition hover:bg-accent focus-visible:ring-2 focus-visible:ring-[#D9623B]/40 disabled:opacity-40"
-          >
-            <Repeat2 className="size-3.5" />
-            Swap
-          </button>
-
-          <button
-            type="button"
             onClick={() => onRemove(product.slot)}
             aria-label={`Remove ${product.name}`}
             className="ml-auto grid size-9 place-items-center rounded-xl text-foreground/45 outline-none transition hover:bg-destructive/10 hover:text-destructive focus-visible:ring-2 focus-visible:ring-destructive/40"
@@ -211,63 +191,6 @@ function ProductCard({
             <Trash2 className="size-4" />
           </button>
         </div>
-
-        {showAlts && (
-          <ul className="mt-3 space-y-1.5 border-t border-border pt-3">
-            {product.alternatives.map((alt) => {
-              const delta = alt.price - product.price;
-              return (
-                <li key={alt.id}>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onSwap(product.slot, alt.id);
-                      setShowAlts(false);
-                    }}
-                    className="flex w-full items-center gap-3 rounded-xl p-2 text-left outline-none transition hover:bg-accent focus-visible:ring-2 focus-visible:ring-[#D9623B]/40"
-                  >
-                    {alt.imageUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={alt.imageUrl}
-                        alt=""
-                        loading="lazy"
-                        className="size-8 shrink-0 rounded-lg bg-white object-contain"
-                      />
-                    ) : (
-                      <span
-                        className="size-8 shrink-0 rounded-lg"
-                        style={{ background: alt.color }}
-                      />
-                    )}
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-sm">{alt.name}</span>
-                      <span className="block truncate text-xs text-muted-foreground">
-                        {alt.retailer}
-                      </span>
-                    </span>
-                    <span className="text-right">
-                      <span className="block font-mono text-xs">
-                        {money(alt.price)}
-                      </span>
-                      <span
-                        className={`block font-mono text-[11px] ${
-                          delta <= 0
-                            ? "text-[#5C6B52]"
-                            : "text-muted-foreground"
-                        }`}
-                      >
-                        {delta === 0
-                          ? "same"
-                          : `${delta < 0 ? "−" : "+"}${money(Math.abs(delta))}`}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
       </div>
     </li>
   );
@@ -326,7 +249,6 @@ export function BoardPanel({
   onSelectAll,
   onClearSelection,
   onGenerate,
-  onSwap,
   onToggleLock,
   onRemove,
   onPaid,
@@ -345,7 +267,6 @@ export function BoardPanel({
   onSelectAll: () => void;
   onClearSelection: () => void;
   onGenerate: (slots: string[]) => Promise<void>;
-  onSwap: (slot: string, altId: string) => void;
   onToggleLock: (slot: string) => void;
   onRemove: (slot: string) => void;
   onPaid: () => void;
@@ -487,7 +408,6 @@ export function BoardPanel({
                       job={jobs.get(product.id)}
                       dimmed={running && !product.locked}
                       onToggleSelect={onToggleSelect}
-                      onSwap={onSwap}
                       onToggleLock={onToggleLock}
                       onRemove={onRemove}
                     />

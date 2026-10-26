@@ -6,16 +6,16 @@
 // Retailers and prices below are invented sample data.
 
 import {
-  swapTo,
   total,
   money,
-  type Alternative,
   type Board,
   type Category,
   type Product,
 } from '@/types/workspaces'
 
-type SlotDef = { slot: string; items: Alternative[] }
+type ProductDetails = Omit<Product, 'slot' | 'locked'>
+
+type SlotDef = { slot: string; items: ProductDetails[] }
 
 const item = (
   id: string,
@@ -23,7 +23,7 @@ const item = (
   retailer: string,
   price: number,
   color: string
-): Alternative => ({ id, name, retailer, price, color })
+): ProductDetails => ({ id, name, retailer, price, color })
 
 const interior: SlotDef[] = [
   {
@@ -187,37 +187,57 @@ function build(defs: SlotDef[]): Product[] {
     ...d.items[0],
     slot: d.slot,
     locked: false,
-    alternatives: d.items.slice(1),
   }))
 }
 
-/** Swap unlocked items for cheaper alternatives until the total fits the budget. */
-function fitBudget(products: Product[], budget: number): Product[] {
+/** Replace unlocked items with cheaper options from the same slot until the total fits. */
+function fitBudget(
+  products: Product[],
+  defs: SlotDef[],
+  budget: number
+): Product[] {
+  const defsBySlot = new Map(defs.map((d) => [d.slot, d]))
   const list = [...products]
 
   for (let guard = 0; guard < 24 && total(list) > budget; guard++) {
     let bestIndex = -1
-    let bestAlt = ''
+    let bestItem: ProductDetails | null = null
     let bestSaving = 0
 
     for (let i = 0; i < list.length; i++) {
       const p = list[i]
       if (p.locked) continue
-      for (const alt of p.alternatives) {
-        const saving = p.price - alt.price
+      const def = defsBySlot.get(p.slot)
+      if (!def) continue
+      for (const candidate of def.items) {
+        const saving = p.price - candidate.price
         if (saving > bestSaving) {
           bestSaving = saving
           bestIndex = i
-          bestAlt = alt.id
+          bestItem = candidate
         }
       }
     }
 
-    if (bestIndex === -1) break
-    list[bestIndex] = swapTo(list[bestIndex], bestAlt)
+    if (bestIndex === -1 || !bestItem) break
+    list[bestIndex] = {
+      ...bestItem,
+      slot: list[bestIndex].slot,
+      locked: list[bestIndex].locked,
+    }
   }
 
   return list
+}
+
+/** Cycle an unlocked item to the next option in its slot. */
+function nextOption(product: Product, defs: SlotDef[]): Product {
+  const def = defs.find((d) => d.slot === product.slot)
+  if (!def || def.items.length === 0) return product
+
+  const index = def.items.findIndex((candidate) => candidate.id === product.id)
+  const next = def.items[(index + 1) % def.items.length]
+  return { ...next, slot: product.slot, locked: product.locked }
 }
 
 const suggestionsFor = (category: Category) =>
@@ -248,8 +268,9 @@ export async function runAgent({
   /* First generation */
   if (board.products.length === 0) {
     const cat = detectCategory(prompt, category)
-    let products = build(cat === 'gaming' ? gaming : interior)
-    if (promptBudget) products = fitBudget(products, promptBudget)
+    const defs = cat === 'gaming' ? gaming : interior
+    let products = build(defs)
+    if (promptBudget) products = fitBudget(products, defs, promptBudget)
 
     const sum = total(products)
     const stores = new Set(products.map((p) => p.retailer)).size
@@ -261,7 +282,7 @@ export async function runAgent({
           ? ` That keeps you ${money(promptBudget - sum)} under your ${money(promptBudget)} budget.`
           : ` That's ${money(sum - promptBudget)} over your ${money(promptBudget)} budget, so lock what you love and ask me to make it cheaper.`
     }
-    reply += ' Lock favorites, swap anything, or tell me what to change.'
+    reply += ' Lock favorites, or tell me what to change.'
 
     return {
       reply,
@@ -271,6 +292,7 @@ export async function runAgent({
   }
 
   /* Follow-ups */
+  const defs = board.category === 'gaming' ? gaming : interior
   let products = board.products
   let budget = promptBudget ?? board.budget
   let reply: string
@@ -282,19 +304,15 @@ export async function runAgent({
   if (wantsCheaper) {
     const target = promptBudget ?? Math.round(total(products) * 0.85)
     budget = target
-    products = fitBudget(products, target)
+    products = fitBudget(products, defs, target)
     const sum = total(products)
     reply =
       sum <= target
-        ? `Done. I swapped some unlocked pieces for cheaper options. The board is now ${money(sum)}, ${money(target - sum)} under ${money(target)}.`
+        ? `Done. I found cheaper options for some unlocked pieces. The board is now ${money(sum)}, ${money(target - sum)} under ${money(target)}.`
         : `This is the closest I can get without changing locked items: ${money(sum)}, still ${money(sum - target)} over ${money(target)}. Unlock a piece and I'll go further.`
   } else {
-    products = products.map((p) =>
-      p.locked || p.alternatives.length === 0
-        ? p
-        : swapTo(p, p.alternatives[0].id)
-    )
-    if (budget) products = fitBudget(products, budget)
+    products = products.map((p) => (p.locked ? p : nextOption(p, defs)))
+    if (budget) products = fitBudget(products, defs, budget)
     reply = `I refreshed every unlocked piece with new options and kept your locked favorites. The board is now ${money(total(products))}.`
   }
 

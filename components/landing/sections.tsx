@@ -17,7 +17,7 @@ const steps = [
   {
     n: "03",
     title: "Preview it in 3D",
-    body: "Pick the pieces you like and see them together in a 3D room. Swap, lock or remove items until it feels right.",
+    body: "Pick the pieces you like and see them together in a 3D room. Lock or remove items, or ask for changes until it feels right.",
   },
 ];
 
@@ -193,8 +193,8 @@ export function Features() {
                   <span className="absolute right-1 top-1 size-1 rounded-full bg-[#D9623B]" />
                 </span>
                 <p className="text-sm leading-relaxed">
-                  Done! I swapped 2 pieces for cheaper options. Your board is
-                  now <span className="font-mono">$1,430</span>.
+                  Done! I found cheaper options for 2 pieces. Your board is now{" "}
+                  <span className="font-mono">$1,430</span>.
                 </p>
               </div>
 
@@ -211,21 +211,21 @@ export function Features() {
             </div>
           </div>
 
-          {/* Swap & lock */}
+          {/* Lock & remove */}
           <div className="grid gap-8 rounded-3xl border border-[#E8E1D5] bg-[#F6F2EA] p-7 md:col-span-3 md:grid-cols-2 md:items-center md:p-10">
             <div>
               <h3 className="text-xl font-semibold">
-                Swap what you don&apos;t love, lock what you do
+                Lock what you love, refine the rest
               </h3>
               <p className="mt-2 max-w-md text-[15px] leading-relaxed text-[#1E1B18]/65">
-                Not sure about a piece? Compare close alternatives and swap it
-                in. Found a favorite? Lock it, and it stays put every time you
-                ask for changes.
+                Found a favorite? Lock it, and it stays put every time you ask
+                for changes. Not sure about a piece? Remove it and ask me to
+                find something else.
               </p>
               <ul className="mt-5 space-y-2 text-sm text-[#1E1B18]/75">
                 {[
                   "Real products with prices and links to each store",
-                  "Alternatives shown with the price difference",
+                  "Cheaper options suggested when you ask",
                   "Remove anything with one click",
                 ].map((point) => (
                   <li key={point} className="flex items-start gap-2.5">
