@@ -17,7 +17,6 @@ export function OrderSummary({
   threadId,
   onPaid,
   onPaymentDone,
-  hasSelection,
 }: {
   /** The selected products (or the whole board when nothing is selected). */
   products: Product[];
@@ -28,8 +27,6 @@ export function OrderSummary({
   onPaid: () => void;
   /** After a fully successful payment, when the user chooses "Stay in workspace". */
   onPaymentDone?: () => void;
-  /** True when the user has selected products (false = the summary covers the whole board). */
-  hasSelection: boolean;
 }) {
   // Product ids the user chose to buy again (this panel session only).
   const [rebuy, setRebuy] = useState<Set<string>>(new Set());
@@ -58,22 +55,17 @@ export function OrderSummary({
 
   const payingProducts = frozen ?? toPay;
 
-  // What to say when there is nothing to pay, so it matches the real situation.
+  // `products` is only what the user selected, so empty means nothing is selected.
   const emptyNotice =
     products.length === 0
       ? {
-          title: "Your board is empty",
-          body: "Add products to your board, then come back to check out.",
+          title: "No products selected",
+          body: "Select the products you want to buy and they’ll appear here.",
         }
-      : hasSelection
-        ? {
-            title: "You’ve already bought everything you selected",
-            body: "Want another copy? Choose “Buy again” on an item above.",
-          }
-        : {
-            title: "Everything on your board is already purchased",
-            body: "Want another copy? Choose “Buy again” on an item above.",
-          };
+      : {
+          title: "You’ve already bought everything you selected",
+          body: "Want another copy? Choose “Buy again” on an item above.",
+        };
 
   return (
     <div className="space-y-5">

@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { MarkdownMessage } from "./markdown-message";
+
 import {
   ArrowUp,
   Check,
@@ -204,9 +206,7 @@ export function ChatPanel({
                 )}
 
                 {message.content && (
-                  <p className="whitespace-pre-wrap text-[15px] leading-relaxed">
-                    {message.content}
-                  </p>
+                  <MarkdownMessage content={message.content} />
                 )}
 
                 {message.boardCount ? (
