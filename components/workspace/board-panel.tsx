@@ -281,10 +281,7 @@ export function BoardPanel({
 
   // Nothing selected means the order summary covers the whole board (the
   // OrderSummary contract); selecting items narrows it to that selection.
-  const summaryProducts =
-    selected.size > 0
-      ? products.filter((p) => selected.has(p.slot))
-      : products;
+  const summaryProducts = products.filter((p) => selected.has(p.slot));
   const summarySum = total(summaryProducts);
 
   const byRetailer = new Map<string, { subtotal: number; items: Product[] }>();
@@ -471,7 +468,6 @@ export function BoardPanel({
                   purchasedIds={purchasedIds}
                   threadId={threadId}
                   onPaid={onPaid}
-                  hasSelection={selected.size > 0}
                   onPaymentDone={() => {
                     onClearSelection();
                     setSummaryOpen(false);
@@ -483,15 +479,23 @@ export function BoardPanel({
 
           <div className="mx-auto flex max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6 lg:px-8">
             <div className="min-w-0">
-              <p className="font-(family-name:--font-mono) text-xl leading-none">
-                {money(summarySum)}
-              </p>
-              <p className="mt-1 truncate text-xs text-muted-foreground">
-                {summaryProducts.length} {selected.size > 0 ? "selected " : ""}
-                {summaryProducts.length === 1 ? "item" : "items"} ·{" "}
-                {byRetailer.size}{" "}
-                {byRetailer.size === 1 ? "retailer" : "retailers"}
-              </p>
+              {summaryProducts.length > 0 ? (
+                <>
+                  <p className="font-[family-name:var(--font-mono)] text-xl leading-none">
+                    {money(summarySum)}
+                  </p>
+                  <p className="mt-1 truncate text-xs text-muted-foreground">
+                    {summaryProducts.length} selected{" "}
+                    {summaryProducts.length === 1 ? "item" : "items"} ·{" "}
+                    {byRetailer.size}{" "}
+                    {byRetailer.size === 1 ? "retailer" : "retailers"}
+                  </p>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Select products to check out
+                </p>
+              )}
             </div>
 
             <button
