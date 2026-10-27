@@ -14,34 +14,101 @@ export type Database = {
   }
   public: {
     Tables: {
-      messages: {
+      assets: {
         Row: {
+          cache_key: string
           created_at: string
+          file_size_bytes: number | null
           id: string
-          parts: Json
-          role: string
-          thread_id: string
+          model_id: string
+          storage_path: string
+          updated_at: string
           user_id: string
         }
         Insert: {
+          cache_key: string
           created_at?: string
+          file_size_bytes?: number | null
           id?: string
-          parts?: Json
-          role: string
-          thread_id: string
+          model_id: string
+          storage_path: string
+          updated_at?: string
           user_id: string
         }
         Update: {
+          cache_key?: string
           created_at?: string
+          file_size_bytes?: number | null
           id?: string
-          parts?: Json
-          role?: string
+          model_id?: string
+          storage_path?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      jobs: {
+        Row: {
+          asset_id: string | null
+          asset_url: string | null
+          cache_key: string
+          created_at: string
+          error: string | null
+          fal_request_id: string | null
+          id: string
+          input_prompt: string | null
+          input_url: string | null
+          kind: string
+          product_id: string | null
+          status: string
+          thread_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          asset_id?: string | null
+          asset_url?: string | null
+          cache_key: string
+          created_at?: string
+          error?: string | null
+          fal_request_id?: string | null
+          id?: string
+          input_prompt?: string | null
+          input_url?: string | null
+          kind: string
+          product_id?: string | null
+          status?: string
+          thread_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          asset_id?: string | null
+          asset_url?: string | null
+          cache_key?: string
+          created_at?: string
+          error?: string | null
+          fal_request_id?: string | null
+          id?: string
+          input_prompt?: string | null
+          input_url?: string | null
+          kind?: string
+          product_id?: string | null
+          status?: string
           thread_id?: string
+          updated_at?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "messages_thread_id_fkey"
+            foreignKeyName: "jobs_asset_id_fkey"
+            columns: ["asset_id"]
+            isOneToOne: false
+            referencedRelation: "assets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "jobs_thread_id_fkey"
             columns: ["thread_id"]
             isOneToOne: false
             referencedRelation: "threads"
@@ -49,28 +116,211 @@ export type Database = {
           },
         ]
       }
-      threads: {
+      messages: {
         Row: {
           created_at: string
-          first_prompt: string | null
           id: string
-          name: string
+          messages_json: Json
+          thread_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          messages_json?: Json
+          thread_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          messages_json?: Json
+          thread_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: true
+            referencedRelation: "threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_items: {
+        Row: {
+          capture_status: string | null
+          created_at: string
+          id: string
+          net_amount: number | null
+          order_id: string
+          payee_email: string
+          payee_merchant_id: string
+          paypal_capture_id: string | null
+          product_id: string
+          purchase_ref: string
+          quantity: number
+          retailer: string
+          slot: string | null
+          title: string
+          unit_price: number
+          user_id: string
+        }
+        Insert: {
+          capture_status?: string | null
+          created_at?: string
+          id?: string
+          net_amount?: number | null
+          order_id: string
+          payee_email: string
+          payee_merchant_id: string
+          paypal_capture_id?: string | null
+          product_id: string
+          purchase_ref: string
+          quantity?: number
+          retailer: string
+          slot?: string | null
+          title: string
+          unit_price: number
+          user_id: string
+        }
+        Update: {
+          capture_status?: string | null
+          created_at?: string
+          id?: string
+          net_amount?: number | null
+          order_id?: string
+          payee_email?: string
+          payee_merchant_id?: string
+          paypal_capture_id?: string | null
+          product_id?: string
+          purchase_ref?: string
+          quantity?: number
+          retailer?: string
+          slot?: string | null
+          title?: string
+          unit_price?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string
+          currency: string
+          error: string | null
+          id: string
+          paypal_order_id: string | null
+          paypal_payer_email: string | null
+          paypal_payer_id: string | null
+          status: string
+          thread_id: string | null
+          total_amount: number
           updated_at: string
           user_id: string
         }
         Insert: {
           created_at?: string
-          first_prompt?: string | null
+          currency?: string
+          error?: string | null
           id?: string
-          name: string
+          paypal_order_id?: string | null
+          paypal_payer_email?: string | null
+          paypal_payer_id?: string | null
+          status?: string
+          thread_id?: string | null
+          total_amount: number
           updated_at?: string
           user_id: string
         }
         Update: {
           created_at?: string
+          currency?: string
+          error?: string | null
+          id?: string
+          paypal_order_id?: string | null
+          paypal_payer_email?: string | null
+          paypal_payer_id?: string | null
+          status?: string
+          thread_id?: string | null
+          total_amount?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      paypal_merchants: {
+        Row: {
+          created_at: string
+          env: string
+          payee_email: string
+          payee_merchant_id: string
+          product_id: string
+          retailer: string
+        }
+        Insert: {
+          created_at?: string
+          env?: string
+          payee_email: string
+          payee_merchant_id: string
+          product_id: string
+          retailer: string
+        }
+        Update: {
+          created_at?: string
+          env?: string
+          payee_email?: string
+          payee_merchant_id?: string
+          product_id?: string
+          retailer?: string
+        }
+        Relationships: []
+      }
+      threads: {
+        Row: {
+          category: string
+          created_at: string
+          first_prompt: string | null
+          id: string
+          name: string
+          preview_image_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          first_prompt?: string | null
+          id?: string
+          name: string
+          preview_image_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
           first_prompt?: string | null
           id?: string
           name?: string
+          preview_image_url?: string | null
           updated_at?: string
           user_id?: string
         }
@@ -100,12 +350,12 @@ export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -129,11 +379,11 @@ export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -142,8 +392,9 @@ export type TablesInsert<
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -154,11 +405,11 @@ export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema["Tables"]
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
@@ -167,8 +418,9 @@ export type TablesUpdate<
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -179,34 +431,44 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  : DefaultSchemaEnumNameOrOptions extends keyof (DefaultSchema["Enums"] &
+        DefaultSchema["CompositeTypes"])
+    ? (DefaultSchema["Enums"] & DefaultSchema["CompositeTypes"])[DefaultSchemaEnumNameOrOptions] extends {
+        Enums: infer E
+      }
+      ? E
+      : never
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : PublicCompositeTypeNameOrOptions extends keyof (DefaultSchema["CompositeTypes"] &
+        DefaultSchema["Enums"])
+    ? (DefaultSchema["CompositeTypes"] & DefaultSchema["Enums"])[PublicCompositeTypeNameOrOptions] extends {
+        CompositeTypes: infer C
+      }
+      ? C
+      : never
     : never
 
 export const Constants = {

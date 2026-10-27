@@ -37,7 +37,7 @@ export async function searchProducts(
       limit: SEARCH_LIMIT,
       filters: toChannel3Filters(filters),
     })
-    const products = page.response.products
+    const products = page.data
     // Expose category context so id-only tools (estimate_dimensions) can resolve it.
     rememberProducts(
       products.map((product) => ({
