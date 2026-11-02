@@ -52,19 +52,16 @@ async function submit(
 ): Promise<FalJobHandle> {
   const model = FAL_MODELS[kind]
 
-  if (isFalMockEnabled()) {
-    // The mock uses the hint (product name) to pick a semantically matching
-    // sample. It is never sent to fal for real image-to-3D generation.
-    const source =
-      kind === 'image-to-3d'
-        ? String(sourceHint || input.image_url || '')
-        : String(input.prompt ?? '')
-    return submitMockJob(kind, model.id, source)
-  }
+  // Real fal.ai API
+  // configureFal()
+  // const queued = await fal.queue.submit(model.id, { input })
+  // return { kind, modelId: model.id, requestId: queued.request_id }
 
-  configureFal()
-  const queued = await fal.queue.submit(model.id, { input })
-  return { kind, modelId: model.id, requestId: queued.request_id }
+  const source =
+    kind === 'image-to-3d'
+      ? String(sourceHint || input.image_url || '')
+      : String(input.prompt ?? '')
+  return submitMockJob(kind, model.id, source)
 }
 
 /**
