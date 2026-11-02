@@ -4,13 +4,11 @@ import {
   FAL_MODELS,
   buildImageTo3DInput,
   buildTextTo3DInput,
-  mapFalQueueStatus,
-  mapModelMeshOutput,
   type Fal3DResult,
   type FalModelKind,
   type FalQueueStatus,
 } from './models'
-import { isFalMockEnabled, pollMockJob, submitMockJob } from './mock'
+import { pollMockJob, submitMockJob } from './mock'
 
 // T4: fal.ai client wrapper. Server-only module: reads FAL_KEY. Never import
 // from client components. Mirrors lib/channel3.ts — external types are
@@ -87,45 +85,5 @@ export async function generateTextTo3D(prompt: string): Promise<FalJobHandle> {
  * worker can mark the job without special-casing.
  */
 export async function pollJob(handle: FalJobHandle): Promise<FalJobSnapshot> {
-  if (isFalMockEnabled()) return pollMockJob(handle)
-
-  configureFal()
-
-  try {
-    const status = await fal.queue.status(handle.modelId, {
-      requestId: handle.requestId,
-    })
-    const mapped = mapFalQueueStatus(status.status)
-    // fal reports failed runs as COMPLETED plus an `error` field, so check it
-    // before fetching the result.
-    const queueError = (status as { error?: unknown }).error
-
-    if (
-      mapped === 'failed' ||
-      (mapped === 'ready' && typeof queueError === 'string' && queueError)
-    ) {
-      return {
-        status: 'failed',
-        ...(typeof queueError === 'string' && queueError ? { error: queueError } : {}),
-      }
-    }
-
-    if (mapped !== 'ready') {
-      return { status: mapped }
-    }
-
-    const { data } = await fal.queue.result(handle.modelId, {
-      requestId: handle.requestId,
-    })
-    const result = mapModelMeshOutput(data)
-    if (!result) {
-      return { status: 'failed', error: 'fal result did not include a mesh URL' }
-    }
-    return { status: 'ready', result }
-  } catch (err) {
-    return {
-      status: 'failed',
-      error: err instanceof Error ? err.message : String(err),
-    }
-  }
+  return pollMockJob(handle);
 }
