@@ -22,11 +22,6 @@ import z from "zod";
 
 const MAX_SWEEPS_PER_GET = 3;
 
-/** Real key or the dev mock — either one means generations can run. */
-function falConfigured(): boolean {
-    return Boolean(process.env.FAL_KEY) || isFalMockEnabled();
-}
-
 const postJobSchema = z
     .object({
         threadId: z.uuid(),
@@ -46,7 +41,7 @@ const getJobSearchParams = z.object({
 
 // POST /api/jobs — queue a 3D generation job for a thread.
 export async function POST(request: Request) {
-    if (!falConfigured() || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
         return Response.json(
             {
                 error: "3D generation is not configured (FAL_KEY / SUPABASE_SERVICE_ROLE_KEY)",
@@ -236,7 +231,7 @@ export async function GET(request: Request) {
 
     // Stale-job reaper: re-advance jobs whose worker stopped mid-flight (poll
     // window elapsed, instance recycled). Bounded per request.
-    if (falConfigured() && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
         const staleBefore = Date.now() - STALE_JOB_MS;
         const stale = rows
             .filter(
