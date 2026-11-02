@@ -101,7 +101,7 @@ export async function POST(request: Request) {
         // Mock samples are chosen from the prompt, so the name has to be part
         // of the cache identity there. Real fal image-to-3D depends only on
         // the image URL.
-        { includePrompt: isFalMockEnabled() },
+        { includePrompt: true },
     );
 
     const baseInsert = {
