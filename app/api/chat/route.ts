@@ -26,7 +26,7 @@ if (!process.env.LLM_API_KEY) {
 
 const chatAdapter = createOpenRouterText(
     // @ts-expect-error - OpenRouter free model type is missing from the library types
-    "openrouter/free",
+    "nvidia/nemotron-3.5-super-vl:free",
     process.env.LLM_API_KEY,
 );
 

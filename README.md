@@ -20,7 +20,7 @@ Nakami (中身, "contents") is an AI interior-design and gaming-setup shopping a
 - Generate 3D scene based on the chosen products for visualization.
 
 ### Multi-seller PayPal checkout
-- One Orders v2 order with one purchase unit per product, each carrying that product's own payee (PayPal's multi-seller payments flow).
+- One Orders v2 order with one purchase unit per product, each paying the merchant account of the retailer it came from (PayPal's multi-seller payments flow).
 
 ---
 
@@ -56,7 +56,7 @@ Prompt ──► /api/chat (TanStack AI + OpenRouter)
 Board item ──► /api/jobs ──► 3D generation queue ──► worker polls ──► GLB ──► Storage
                                                               └─► assets + jobs rows
 
-Board ──► /api/checkout/orders ──► one PayPal order, N purchase units (N payees)
+Board ──► /api/checkout/orders ──► one PayPal order, N purchase units (one payee per retailer)
               └─► capture ──► per-item status ──► orders + order_items
 ```
 
@@ -113,14 +113,14 @@ Apply migrations to your Supabase project (this creates the tables, RLS policies
 
 ```bash
 supabase link --project-ref <your-ref>
-supabase db push
+bun run db:migrate
 ```
 
 Seed sample data:
 
 ```bash
 bun run seed:samples                         # CC0 furniture GLBs -> glb-cache/samples
-bun run seed:merchants                       # payee rows from scripts/paypal-merchants.json
+bun run seed:merchants                       # retailer -> payee rows from scripts/paypal-merchants.json
 ```
 
 Copy `scripts/paypal-merchants.example.json` to `scripts/paypal-merchants.json` first for real sandbox merchant accounts.
@@ -144,7 +144,8 @@ Open [http://localhost:3000](http://localhost:3000). `/` redirects to `/landing`
 | `bun run lint` | ESLint |
 | `bun test` | Unit tests (offline) |
 | `bun run test:live` | Tests against real services, using `.env.local` |
+| `bun run db:migrate` | Push pending migrations to the linked Supabase project |
 | `bun run seed:samples` | Upload sample GLBs to Storage |
-| `bun run seed:merchants` | Seed PayPal merchant payee rows |
+| `bun run seed:merchants` | Seed retailer → PayPal payee rows |
 
 Tests cover the pure parts of the system: scene contract and layout rules, fal model mapping and mock driver, cache keys, PayPal purchase-unit building and capture interpretation, and workspace plan parsing.

@@ -1,10 +1,11 @@
 // Shared checkout types (plan: docs/plans/paypal-multiseller-checkout.md).
 //
 // The flow is PayPal's documented "multi-seller payments" feature: ONE Orders
-// v2 order whose `purchase_units` carry one unit PER PRODUCT, each paying that
-// product's own merchant account ("payee"). `createMultiSellerOrder` is our
-// server-side wrapper name for that flow — PayPal ships no SDK method by that
-// exact name (verified against the Server SDK v2 docs and the official guide).
+// v2 order whose `purchase_units` carry one unit PER PRODUCT, each paying the
+// merchant account of the retailer that product came from ("payee").
+// `createMultiSellerOrder` is our server-side wrapper name for that flow —
+// PayPal ships no SDK method by that exact name (verified against the Server
+// SDK v2 docs and the official guide).
 
 // A PayPal business account that receives funds (sandbox or live).
 export interface Payee {
