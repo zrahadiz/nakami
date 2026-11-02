@@ -2,27 +2,26 @@ import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { createClient } from '@supabase/supabase-js'
 
-// Seeds product-specific mappings from scripts/paypal-merchants.json into the
-// paypal_merchants table: one PayPal sandbox BUSINESS account per product
-// ("payee" of the purchase unit). Idempotent (upsert on product_id), safe to
-// re-run.
+// Seeds retailer-specific mappings from scripts/paypal-merchants.json into the
+// paypal_merchants table: one PayPal sandbox BUSINESS account per retailer
+// ("payee" of every purchase unit that came from that store). Idempotent
+// (upsert on retailer + env), safe to re-run.
 //
 // The file can also be a plain merchant pool ({ payeeEmail, payeeMerchantId }
-// only). Checkout assigns a random pool merchant to each new product and
+// only). Checkout assigns a random pool merchant to each new retailer and
 // persists it, so in that format there is nothing to seed.
 //
 // Setup:
 //   1. Create sandbox Business accounts on developer.paypal.com (Sandbox >
 //      Accounts) and note each account's email + payer/merchant id.
-//   2. Put them in scripts/paypal-merchants.json. For explicit per-product
-//      mappings, also add productId + retailer per entry (see the example).
+//   2. Put them in scripts/paypal-merchants.json. For explicit per-retailer
+//      mappings, also add a retailer per entry (see the example).
 //   3. Run: bun run seed:merchants
 //
 // Needs NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (Bun loads
 // .env.local automatically).
 
 interface MerchantEntry {
-  productId?: string
   retailer?: string
   payeeEmail: string
   payeeMerchantId: string
@@ -54,7 +53,6 @@ async function main(): Promise<number> {
     entries.length > 0 &&
     entries.every(
       (entry) =>
-        !entry?.productId &&
         !entry?.retailer &&
         entry?.payeeEmail &&
         entry?.payeeMerchantId,
@@ -64,14 +62,13 @@ async function main(): Promise<number> {
       `scripts/paypal-merchants.json contains ${entries.length} merchant account(s).`,
     )
     console.log(
-      'Checkout assigns one at random to each new product and persists it; nothing to seed.',
+      'Checkout assigns one at random to each new retailer and persists it; nothing to seed.',
     )
     return 0
   }
 
   const invalid = entries.findIndex(
     (entry) =>
-      !entry?.productId ||
       !entry?.retailer ||
       !entry?.payeeEmail ||
       !entry?.payeeMerchantId,
@@ -79,7 +76,7 @@ async function main(): Promise<number> {
   if (entries.length === 0 || invalid !== -1) {
     console.error(
       `paypal-merchants.json: entries need payeeEmail and payeeMerchantId; ` +
-        `per-product rows also need productId and retailer` +
+        `per-retailer rows also need retailer` +
         (invalid !== -1 ? ` (bad entry #${invalid + 1})` : ''),
     )
     return 1
@@ -93,19 +90,18 @@ async function main(): Promise<number> {
   for (const entry of entries) {
     const { error } = await supabase.from('paypal_merchants').upsert(
       {
-        product_id: entry.productId!,
         retailer: entry.retailer!,
         payee_email: entry.payeeEmail,
         payee_merchant_id: entry.payeeMerchantId,
         env: entry.env ?? 'sandbox',
       },
-      { onConflict: 'product_id' },
+      { onConflict: 'retailer,env' },
     )
     if (error) {
       failures += 1
-      console.error(`✗ ${entry.productId}: ${error.message}`)
+      console.error(`✗ ${entry.retailer}: ${error.message}`)
     } else {
-      console.log(`✓ ${entry.productId} -> ${entry.payeeMerchantId}`)
+      console.log(`✓ ${entry.retailer} -> ${entry.payeeMerchantId}`)
     }
   }
 

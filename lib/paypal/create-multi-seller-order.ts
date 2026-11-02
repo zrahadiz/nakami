@@ -9,12 +9,13 @@ import type { CheckoutItemInput, MultiSellerOrderResult } from './types'
 /**
  * createMultiSellerOrder — our name for PayPal's documented "multi-seller
  * payments" flow: ONE Orders v2 order whose purchase_units carry one unit per
- * product, each with that product's own payee (intent CAPTURE, reference_id
- * required per unit, PayPal-Partner-Attribution-Id for attribution). PayPal
+ * product, each paying the merchant account of the retailer it came from
+ * (intent CAPTURE, reference_id required per unit,
+ * PayPal-Partner-Attribution-Id for attribution). PayPal
  * ships no SDK method by this exact name; this wrapper implements the flow
  * from developer.paypal.com "Accept Multi-seller payments".
  *
- * Steps: validate + merge items -> resolve each product's payee -> persist a
+ * Steps: validate + merge items -> resolve each retailer's payee -> persist a
  * server-side snapshot (orders + order_items; the board is client state) ->
  * create the PayPal order with PayPal-Request-Id = internal id (idempotent) ->
  * store the PayPal order id. The buyer approves through the JS SDK buttons;

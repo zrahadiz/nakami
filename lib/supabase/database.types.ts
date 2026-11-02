@@ -142,7 +142,7 @@ export type Database = {
           {
             foreignKeyName: "messages_thread_id_fkey"
             columns: ["thread_id"]
-            isOneToOne: true
+            isOneToOne: false
             referencedRelation: "threads"
             referencedColumns: ["id"]
           },
@@ -261,7 +261,7 @@ export type Database = {
             foreignKeyName: "orders_thread_id_fkey"
             columns: ["thread_id"]
             isOneToOne: false
-            referencedRelation: "orders"
+            referencedRelation: "threads"
             referencedColumns: ["id"]
           },
         ]
@@ -272,7 +272,6 @@ export type Database = {
           env: string
           payee_email: string
           payee_merchant_id: string
-          product_id: string
           retailer: string
         }
         Insert: {
@@ -280,7 +279,6 @@ export type Database = {
           env?: string
           payee_email: string
           payee_merchant_id: string
-          product_id: string
           retailer: string
         }
         Update: {
@@ -288,7 +286,6 @@ export type Database = {
           env?: string
           payee_email?: string
           payee_merchant_id?: string
-          product_id?: string
           retailer?: string
         }
         Relationships: []
@@ -312,7 +309,7 @@ export type Database = {
           name: string
           preview_image_url?: string | null
           updated_at?: string
-          user_id?: string
+          user_id: string
         }
         Update: {
           category?: string
@@ -392,9 +389,8 @@ export type TablesInsert<
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -418,9 +414,8 @@ export type TablesUpdate<
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -431,22 +426,17 @@ export type Enums<
   DefaultSchemaEnumNameOrOptions extends
     | keyof DefaultSchema["Enums"]
     | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends (DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals }
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof (DefaultSchema["Enums"] &
-        DefaultSchema["CompositeTypes"])
-    ? (DefaultSchema["Enums"] & DefaultSchema["CompositeTypes"])[DefaultSchemaEnumNameOrOptions] extends {
-        Enums: infer E
-      }
-      ? E
-      : never
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
@@ -462,13 +452,8 @@ export type CompositeTypes<
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof (DefaultSchema["CompositeTypes"] &
-        DefaultSchema["Enums"])
-    ? (DefaultSchema["CompositeTypes"] & DefaultSchema["Enums"])[PublicCompositeTypeNameOrOptions] extends {
-        CompositeTypes: infer C
-      }
-      ? C
-      : never
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {

@@ -43,9 +43,9 @@ export function payeePayload(payee: Payee): {
 
 /**
  * Validate the cart and merge duplicate products (quantity sums up). One
- * purchase unit per PRODUCT, per the "sandbox merchant account for each
- * product" requirement. Currency is USD-only: the demo's money() formats USD
- * and the sandbox merchant accounts are US-based.
+ * purchase unit per PRODUCT, each paid to its retailer's "sandbox merchant
+ * account". Currency is USD-only: the demo's money() formats USD and the
+ * sandbox merchant accounts are US-based.
  */
 export function prepareCheckoutItems(items: CheckoutItemInput[]): CheckoutItemInput[] {
   if (!Array.isArray(items) || items.length === 0) {
@@ -95,10 +95,10 @@ export function prepareCheckoutItems(items: CheckoutItemInput[]): CheckoutItemIn
 }
 
 /**
- * One purchase unit per product, each with the product's own payee and a
- * 2-decimal amount. `custom_id` mirrors `reference_id` so webhook
- * PAYMENT.CAPTURE.* events (which echo custom_id) can be routed back to the
- * right order_items row.
+ * One purchase unit per product, each paying its retailer's merchant account
+ * and carrying a 2-decimal amount. `custom_id` mirrors `reference_id` so
+ * webhook PAYMENT.CAPTURE.* events (which echo custom_id) can be routed back
+ * to the right order_items row.
  */
 export function buildPurchaseUnits(
   items: CheckoutItemInput[],

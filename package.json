@@ -10,7 +10,8 @@
     "test": "bun test",
     "test:live": "bun test --env-file=.env.local",
     "seed:samples": "bun scripts/seed-sample-models.ts",
-    "seed:merchants": "bun scripts/seed-paypal-merchants.ts"
+    "seed:merchants": "bun scripts/seed-paypal-merchants.ts",
+    "db:migrate": "bunx supabase db push"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

@@ -13,7 +13,9 @@
 // `readLatestPlan` seeds the id catalog from every message before the plan too.
 //
 // The reading is deliberately tolerant: it also accepts plans that carry full
-// products inline (any extra fields are ignored):
+// products inline (any extra fields are ignored), and plans the model wrote as
+// plain JSON text instead of a `structured-output` part (free OpenRouter models
+// do this, and sometimes twice in one answer):
 //   {
 //     reply?: string,                // what the assistant says in chat (or summary)
 //     title?: string,
@@ -48,6 +50,8 @@ export type PlanView = {
   board: Board
   reply: string
   suggestions: string[]
+  /** true when the plan was recovered from JSON the model wrote as text. */
+  fromText?: boolean
 }
 
 /* ---------- helpers ---------- */
@@ -212,17 +216,105 @@ function structuredPart(message: LooseMessage): Loose | null {
   return null
 }
 
+/** End index of the balanced `{...}` starting at `start`, or -1. */
+function balancedObjectEnd(text: string, start: number): number {
+  let depth = 0
+  let inString = false
+  let escaped = false
+
+  for (let i = start; i < text.length; i++) {
+    const char = text[i]
+    if (inString) {
+      if (escaped) escaped = false
+      else if (char === '\\') escaped = true
+      else if (char === '"') inString = false
+      continue
+    }
+    if (char === '"') {
+      inString = true
+      continue
+    }
+    if (char === '{') depth += 1
+    else if (char === '}') {
+      depth -= 1
+      if (depth === 0) return i
+    }
+  }
+  return -1
+}
+
+/** Every parseable `{...}` object in a text, ignoring prose around them. */
+function jsonObjectsIn(text: string): Loose[] {
+  const found: Loose[] = []
+  let index = 0
+
+  while (index < text.length) {
+    const start = text.indexOf('{', index)
+    if (start === -1) break
+
+    const end = balancedObjectEnd(text, start)
+    if (end === -1) break
+
+    try {
+      const parsed: unknown = JSON.parse(text.slice(start, end + 1))
+      if (isObj(parsed)) found.push(parsed)
+      index = end + 1
+    } catch {
+      index = start + 1
+    }
+  }
+
+  return found
+}
+
+/** A plan-shaped object: it references products by id or carries them inline. */
+function isPlanShape(value: Loose): boolean {
+  return (
+    Array.isArray(value.productIds) ||
+    Array.isArray(value.products) ||
+    Array.isArray(value.items)
+  )
+}
+
+/**
+ * Recover a plan from assistant text. `openrouter/free` models sometimes answer
+ * with the plan JSON as prose instead of letting the adapter stream a
+ * `structured-output` part — and occasionally repeat it twice in one answer.
+ * Returning the first plan-shaped object keeps the bubble on the summary path.
+ */
+function planFromText(message: LooseMessage): Loose | null {
+  for (const part of message.parts ?? []) {
+    if (!isObj(part) || part.type !== 'text') continue
+
+    const text =
+      typeof part.content === 'string'
+        ? part.content
+        : typeof part.text === 'string'
+          ? part.text
+          : null
+    if (!text) continue
+
+    for (const object of jsonObjectsIn(text)) {
+      if (isPlanShape(object)) return object
+    }
+  }
+  return null
+}
+
 /** The structured plan object of an assistant message, if it has a readable one. */
-function planDataOf(message: LooseMessage): { plan: Loose; complete: boolean } | null {
+function planDataOf(
+  message: LooseMessage
+): { plan: Loose; complete: boolean; fromText: boolean } | null {
   if (message.role !== 'assistant') return null
 
   const part = structuredPart(message)
-  if (!part) return null
+  if (part) {
+    const plan = isObj(part.data) ? part.data : isObj(part.partial) ? part.partial : null
+    if (plan) return { plan, complete: isObj(part.data), fromText: false }
+  }
 
-  const plan = isObj(part.data) ? part.data : isObj(part.partial) ? part.partial : null
-  if (!plan) return null
-
-  return { plan, complete: isObj(part.data) }
+  const fallback = planFromText(message)
+  return fallback ? { plan: fallback, complete: true, fromText: true } : null
 }
 
 export function readMessagePlan(
@@ -246,6 +338,7 @@ export function readMessagePlan(
       .map(str)
       .filter((s): s is string => !!s)
       .slice(0, 4),
+    fromText: data.fromText,
   }
 }
 
@@ -359,7 +452,11 @@ export function toViewMessages(
     const plan = readMessagePlan(m, opts.fallback, catalog)
     const live = opts.running && m.id === lastId
     const activity = activityOf(m, live)
-    const content = plan?.reply || textOf(m)
+    // A plan recovered from text already consumed that text; without a summary
+    // there is nothing to say, so never fall back to the raw JSON again.
+    const content = plan
+      ? plan.reply || (plan.fromText ? '' : textOf(m))
+      : textOf(m)
 
     if (!content && activity.length === 0) return []
 
