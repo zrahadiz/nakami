@@ -177,6 +177,65 @@ describe('readLatestPlan', () => {
   })
 })
 
+describe('plans written as plain text', () => {
+  test('recovers a plan the model answered as JSON prose', () => {
+    const view = readMessagePlan(
+      message([{ type: 'text', content: JSON.stringify(plan, null, 2) }]),
+      'furniture'
+    )
+
+    expect(view).not.toBeNull()
+    expect(view?.reply).toBe(plan.summary)
+    expect(view?.fromText).toBe(true)
+    expect(view?.complete).toBe(true)
+  })
+
+  test('takes the first of two duplicated JSON answers', () => {
+    const doubled = `${JSON.stringify(plan)}${JSON.stringify({
+      ...plan,
+      summary: 'A second, repeated answer.',
+    })}`
+
+    const view = readMessagePlan(
+      message([{ type: 'text', content: doubled }]),
+      'furniture'
+    )
+
+    expect(view?.reply).toBe(plan.summary)
+  })
+
+  test('ignores prose and unrelated JSON', () => {
+    expect(
+      readMessagePlan(
+        message([{ type: 'text', content: 'I found a sofa and a lamp.' }]),
+        'furniture'
+      )
+    ).toBeNull()
+    expect(
+      readMessagePlan(
+        message([{ type: 'text', content: '{"status":"ok","count":2}' }]),
+        'furniture'
+      )
+    ).toBeNull()
+  })
+
+  test('shows the summary in chat instead of the raw JSON', () => {
+    const views = toViewMessages(
+      [
+        { id: 'u0', role: 'user', parts: [{ type: 'text', text: 'a sofa and a lamp' }] },
+        message([
+          { type: 'tool-call', name: 'search_channel3', output: { products: [searchResult, lampResult] } },
+          { type: 'text', content: JSON.stringify(plan) },
+        ]),
+      ],
+      { workedFor: {}, running: false, fallback: 'furniture' }
+    )
+
+    expect(views[1]?.content).toBe(plan.summary)
+    expect(views[1]?.boardCount).toBe(2)
+  })
+})
+
 describe('toViewMessages', () => {
   test('reports boardCount resolved through the message searches', () => {
     const views = toViewMessages(

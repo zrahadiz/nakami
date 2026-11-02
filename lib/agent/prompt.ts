@@ -8,4 +8,4 @@ Rules:
 - After choosing the products, call build_scene_layout with their IDs and the room type that best matches the brief ('living-room', 'bedroom', 'dining-room', 'home-office') so the preview scene has a concrete arrangement.
 - Search every category the brief needs (for example seating, lighting, tables, rugs, decor).
 - On a swap or refinement request, keep the unchanged items and search only for the replacements.
-- When you are done searching, answer with the structured plan: a 1-2 sentence summary, the search query you used, the optional category ('furniture' or 'gaming'), the chosen productIds (only IDs returned by search_channel3), optional overall dimensions, and an optional followUp suggestion.`
+- When you are done searching, reply in a short plain-text message (1-2 sentences) describing the plan you chose. Never print the plan as JSON, never write field names or the structured object yourself — the app collects that separately. Only ever reference product IDs that search_channel3 actually returned.`
